@@ -1,0 +1,10 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+    <head>
+        <title>Getting Started: Serving Web Content</title>
+        <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+    </head>
+    <body>
+        <p th:text="'In the last 120min the latest bus was route ' + ${latestRoute} + ' at stop ID ' + ${latestStop} + ' (' + ${latestDelay} + ' seconds)'" />
+    </body>
+</html>

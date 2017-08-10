@@ -1,0 +1,26 @@
+<!DOCTYPE HTML>
+<html xmlns:th="http://www.thymeleaf.org">
+<head>
+    <title>Timetable</title>
+    <meta http-equiv="Content-Type" content="text/html; charset=UTF-8" />
+</head>
+<body>
+<p th:text="'In the last 120min the latest bus was route ' + ${latestRoute} + ' at stop ID ' + ${latestStop} + ' (' + ${latestDelay} + ' seconds)'" />
+    <table>
+        <tr>
+            <th>Trip UUID</th>
+            <th>Day of the week</th>
+            <th>Start time</th>
+            <th>Trip ID</th>
+        </tr>
+        <tr th:each="trip : ${trips}">
+            <td th:text="${trip.getTripUuid()}"></td>
+            <td th:text="${trip.getDayOfWeek()}"></td>
+            <td th:text="${trip.getStartTime()}"></td>
+            <td th:text="${trip.getTripId()}"></td>
+            <td th:text="${trip.getDirection()}"></td>
+            <td th:text="${trip.getHeadsign()}"></td>
+        </tr>
+    </table>
+</body>
+</html>
