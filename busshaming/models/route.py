@@ -5,12 +5,12 @@ class Route(models.Model):
     gtfs_route_id = models.CharField(max_length=200)
     feed = models.ForeignKey('Feed')
     agency = models.ForeignKey('Agency')
-    route_short_name = models.CharField(max_length=200)
-    route_long_name = models.CharField(max_length=200)
-    route_desc = models.CharField(blank=True, null=True, max_length=500)
-    route_url = models.CharField(blank=True, null=True, max_length=200)
-    route_color = models.CharField(blank=True, null=True, max_length=7)
-    route_text_color = models.CharField(blank=True, null=True, max_length=7)
+    short_name = models.CharField(max_length=200)
+    long_name = models.CharField(max_length=200)
+    description = models.CharField(blank=True, null=True, max_length=500)
+    url = models.CharField(blank=True, null=True, max_length=200)
+    color = models.CharField(blank=True, null=True, max_length=7)
+    text_color = models.CharField(blank=True, null=True, max_length=7)
 
     class Meta:
         unique_together = ('gtfs_route_id', 'feed')
