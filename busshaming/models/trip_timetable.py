@@ -2,7 +2,7 @@ from django.db import models
 
 
 class TripTimetable(models.Model):
-    trip_id = models.ForeignKey('Trip')
+    trip = models.ForeignKey('Trip')
     start_date = models.DateField()
     end_date = models.DateField()
     monday = models.BooleanField()

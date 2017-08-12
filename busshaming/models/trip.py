@@ -5,7 +5,7 @@ class Trip(models.Model):
     gtfs_trip_id = models.CharField(max_length=200)
     version = models.IntegerField(default=0)
     active = models.BooleanField()
-    route_id = models.ForeignKey('Route')
+    route = models.ForeignKey('Route')
     trip_headsign = models.CharField(max_length=200, blank=True, null=True)
     trip_short_name = models.CharField(max_length=200, blank=True, null=True)
     direction = models.SmallIntegerField()
@@ -15,4 +15,4 @@ class Trip(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:
-        unique_together = ('gtfs_trip_id', 'version', 'route_id')
+        unique_together = ('gtfs_trip_id', 'version', 'route')
