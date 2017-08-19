@@ -8,3 +8,6 @@ class Agency(models.Model):
 
     class Meta:
         unique_together = ('gtfs_agency_id', 'feed')
+
+    def __str__(self):
+        return f'{self.feed.slug} - {self.gtfs_agency_id} ({self.name})'

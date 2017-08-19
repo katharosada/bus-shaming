@@ -16,3 +16,6 @@ class Trip(models.Model):
 
     class Meta:
         unique_together = ('gtfs_trip_id', 'version', 'route')
+
+    def __str__(self):
+        return f'Trip {self.gtfs_trip_id} v{self.version} (Route {self.route.short_name})'

@@ -11,3 +11,6 @@ class TripStop(models.Model):
 
     class Meta:
         unique_together = ('trip', 'stop', 'sequence')
+
+    def __str__(self):
+        return f'Trip {self.trip.gtfs_trip_id} stop {self.sequence} ({self.stop.name})'

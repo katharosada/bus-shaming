@@ -8,3 +8,6 @@ class Stop(models.Model):
 
     class Meta:
         unique_together = ('feed', 'gtfs_stop_id')
+
+    def __str__(self):
+        return f'{self.gtfs_stop_id} - {self.name}'

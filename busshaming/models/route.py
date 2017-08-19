@@ -14,3 +14,6 @@ class Route(models.Model):
 
     class Meta:
         unique_together = ('gtfs_route_id', 'feed')
+
+    def __str__(self):
+        return f'{self.gtfs_route_id} - {self.short_name}'
