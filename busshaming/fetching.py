@@ -102,7 +102,13 @@ def process_trips(feed, calendars, trip_stops, csvreader):
         # Should always exist
         route = routes.get(gtfs_route_id)
         changed = False
+
         trip = existing.get(gtfs_trip_id, None)
+        if trip is not None and gtfs_trip_id in trip_stops:
+            # The trip stops have changed. Create a new version of the trip.
+            new_version = trip.version + 1
+            trip = Trip(route=route, gtfs_trip_id=gtfs_trip_id, version=new_version)
+            changed = True
         if trip is None:
             changed = True
             trip = Trip(route=route, gtfs_trip_id=gtfs_trip_id)
@@ -127,7 +133,6 @@ def process_trips(feed, calendars, trip_stops, csvreader):
         if changed:
             trip.save()
 
-        # Should only be there if the stops have changed.
         if gtfs_trip_id in trip_stops:
             to_create = []
             for tripstop_data in trip_stops[gtfs_trip_id]:
@@ -167,7 +172,7 @@ def process_stop_times(feed, csvreader):
         trips[trip.id] = trip
 
     existing = defaultdict(lambda: defaultdict(list))
-    for tripstop in TripStop.objects.filter(stop__feed=feed):
+    for tripstop in TripStop.objects.filter(stop__feed=feed).order_by('trip_id', 'sequence'):
         trip = trips[tripstop.trip_id]
         existing[trip.gtfs_trip_id][trip.version].append(tripstop)
 
@@ -197,16 +202,25 @@ def process_stop_times(feed, csvreader):
             # TODO: Add to new_stop_sets only if changed
             if len(existing_stops) != len(stop_sets[gtfs_trip_id]):
                 print('MISMATCH', existing_stops[0].trip_id)
+                new_stop_sets[gtfs_trip_id] = stop_sets[gtfs_trip_id]
             else:
+                mismatch = False
                 for new_stop, existing_stop in zip(stop_sets[gtfs_trip_id], existing_stops):
                     if new_stop['sequence'] != existing_stop.sequence:
-                        print('MISMATCH')
+                        print(f'MISMATCH sequence {gtfs_trip_id} {new_stop["sequence"]} {existing_stop.sequence}')
+                        mismatch = True
                     elif new_stop['stop'].id != existing_stop.stop_id:
-                        print('MISMATCH')
+                        print(f'MISMATCH stop_id {gtfs_trip_id}')
+                        mismatch = True
                     elif new_stop['arrival_time'] != existing_stop.arrival_time:
-                        print('MISMATCH')
+                        print(f'MISMATCH arrival time {gtfs_trip_id}')
+                        mismatch = True
                     elif new_stop['departure_time'] != existing_stop.departure_time:
-                        print('MISMATCH')
+                        print(f'MISMATCH departure time {gtfs_trip_id}')
+                        mismatch = True
+                if mismatch:
+                    print('Intending to create new trip version for {gtfs_trip_id}')
+                    new_stop_sets[gtfs_trip_id] = stop_sets[gtfs_trip_id]
         else:
             print('Trip {} did not previously have stops'.format(gtfs_trip_id))
             # this trip has no stops already so we don't need to compare
