@@ -6,8 +6,8 @@ from .models import (
     Route,
     Stop,
     Trip,
+    TripDate,
     TripStop,
-    TripTimetable,
 )
 
 
@@ -44,12 +44,14 @@ class TripAdmin(admin.ModelAdmin):
     search_fields = ('gtfs_trip_id', 'route__gtfs_route_id', 'route__short_name')
 
 
+@admin.register(TripDate)
+class TripDateAdmin(admin.ModelAdmin):
+    list_display = ('trip', 'date')
+    raw_id_fields = ('trip',)
+
+
 @admin.register(TripStop)
 class TripStopAdmin(admin.ModelAdmin):
-    list_display = ('trip', 'sequence', 'stop')
+    list_display = ('trip', 'sequence', 'stop', 'arrival_time')
     search_fields = ('trip__gtfs_trip_id', 'stop__gtfs_stop_id', 'stop__name')
-
-
-@admin.register(TripTimetable)
-class TripTimetableAdmin(admin.ModelAdmin):
-    pass
+    raw_id_fields = ('trip', 'stop')
