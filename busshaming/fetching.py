@@ -10,8 +10,9 @@ import django
 import pytz
 import requests
 
-
 django.setup()
+
+from django.contrib.gis.geos import Point
 
 from busshaming.models import Agency, Feed, Route, Stop, Trip, TripDate, TripStop
 
@@ -77,6 +78,7 @@ def process_trip_dates(csvreader):
     print('Processing trip dates')
     result = defaultdict(list)
     limit = datetime.now().date() + timedelta(days=14)
+    today = datetime.now().date()
     for row in csvreader:
         start_date = datetime.strptime((row['start_date']), '%Y%m%d').date()
         end_date = datetime.strptime((row['end_date']), '%Y%m%d').date()
@@ -85,6 +87,8 @@ def process_trip_dates(csvreader):
             if row[day] == '1':
                 days.add(i)
         cur_date = start_date
+        if cur_date < today:
+            cur_date = today
         while cur_date <= end_date and cur_date < limit:
             if cur_date.weekday() in days:
                 # Add to set of days.
@@ -103,8 +107,9 @@ def process_trips(feed, all_trip_dates, trip_stops, csvreader):
     for route in Route.objects.filter(feed=feed):
         routes[route.gtfs_route_id] = route
 
-    yesterday = datetime.now().date() - timedelta(days=1)
     current_trip_dates = defaultdict(dict)
+    today = datetime.now().date()
+    yesterday = today - timedelta(days=1)
     for trip_date in TripDate.objects.filter(trip__route__feed=feed, date__gte=yesterday):
         current_trip_dates[trip_date.trip_id][trip_date.date] = trip_date
 
@@ -141,7 +146,6 @@ def process_trips(feed, all_trip_dates, trip_stops, csvreader):
             if prev != values[value]:
                 setattr(trip, value, values[value])
                 changed = True
-                print('changed', value)
         if changed:
             trip.save()
 
@@ -152,14 +156,15 @@ def process_trips(feed, all_trip_dates, trip_stops, csvreader):
             TripStop.objects.bulk_create(to_create)
 
         trip_dates = all_trip_dates[trip_row['service_id']]
-        today = datetime.now().date()
         old_trip_dates = current_trip_dates[trip.id]
         for new_trip_date in trip_dates:
             old_trip_date = old_trip_dates.pop(new_trip_date, None)
             if old_trip_date is None:
                 TripDate(trip=trip, date=new_trip_date).save()
         for old_trip_date in old_trip_dates.values():
-            old_trip_date.delete()
+            # Don't delete trips older than the new dump just because they aren't listed anymore.
+            if old_trip_date.date > today:
+                old_trip_date.delete()
 
 
 def process_stops(feed, csvreader):
@@ -171,14 +176,22 @@ def process_stops(feed, csvreader):
     for row in csvreader:
         gtfs_stop_id = row['stop_id']
         stop = existing.get(gtfs_stop_id, None)
+        changed = False
+        values = {}
+        values['name'] = row['stop_name']
+        x = float(row['stop_lon'])
+        y = float(row['stop_lat'])
+        values['position'] = Point(x, y, srid=4326)
         if stop is None:
-            stop = Stop(feed=feed, gtfs_stop_id=gtfs_stop_id, name=row['stop_name'])
+            stop = Stop(feed=feed, gtfs_stop_id=gtfs_stop_id)
+            changed = True
+        for value in values:
+            prev = getattr(stop, value)
+            if prev != values[value]:
+                setattr(stop, value, values[value])
+                changed = True
+        if changed:
             stop.save()
-        else:
-            # Only update the stop if the name has changed
-            if stop.name != row['stop_name']:
-                stop.name = row['stop_name']
-                stop.save()
 
 
 def process_stop_times(feed, csvreader):
@@ -265,7 +278,6 @@ def fetch_timetable():
         trip_dates = process_trip_dates(csv.DictReader(io.TextIOWrapper(zfile.open('calendar.txt'))))
         trip_stops = process_stop_times(feed, csv.DictReader(io.TextIOWrapper(zfile.open('stop_times.txt'))))
         process_trips(feed, trip_dates, trip_stops, csv.DictReader(io.TextIOWrapper(zfile.open('trips.txt'))))
-
         return True
     return False
 
