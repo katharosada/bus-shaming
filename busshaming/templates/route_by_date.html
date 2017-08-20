@@ -1,0 +1,11 @@
+{% extends "base.html" %}
+
+{% block content %}
+<h1>Route {{ route.short_name}}</h1>
+<p> {{ route }} </p>
+<ul>
+{% for trip_date in trip_dates %}
+<li>{{ trip_date }}</li>
+{% endfor %}
+</ul>
+{% endblock %}

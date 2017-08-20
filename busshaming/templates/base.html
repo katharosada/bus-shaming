@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>{% block title %}Bus-shaming{% endblock %}</title>
+  </head>
+  <body>
+    {% block content %}
+    <h1>Bus shaming</h1>
+    <form method="post" action="{% url 'fetch_timetable' %}">
+      {% csrf_token %}
+      <input type="submit" value="fetch timetable">
+    </form>
+    {% endblock %}
+  </body>
+</html>
