@@ -3,6 +3,7 @@ from django.contrib import admin
 from .models import (
     Agency,
     Feed,
+    RealtimeEntry,
     Route,
     Stop,
     Trip,
@@ -21,6 +22,13 @@ class AgencyAdmin(admin.ModelAdmin):
 @admin.register(Feed)
 class FeedAdmin(admin.ModelAdmin):
     pass
+
+
+@admin.register(RealtimeEntry)
+class RealtimeEntry(admin.ModelAdmin):
+    list_display = ('trip_date', 'stop', 'sequence', 'arrival_time', 'arrival_delay')
+    raw_id_fields = ('trip_date', 'stop')
+    readonly_fields = ('id',)
 
 
 @admin.register(Route)
@@ -47,7 +55,9 @@ class TripAdmin(admin.ModelAdmin):
 @admin.register(TripDate)
 class TripDateAdmin(admin.ModelAdmin):
     list_display = ('trip', 'date')
+    list_filter = ('date',)
     raw_id_fields = ('trip',)
+    search_fields = ('trip__gtfs_trip_id',)
 
 
 @admin.register(TripStop)
