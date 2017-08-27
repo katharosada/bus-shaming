@@ -1,0 +1,28 @@
+# Ignore generated zip files of any name
+*.zip
+
+# Ignore dependencies
+boto3/
+boto3-1.4.6.dist-info/
+botocore/
+botocore-1.6.6.dist-info/
+certifi/
+certifi-2017.7.27.1.dist-info/
+chardet/
+chardet-3.0.4.dist-info/
+dateutil/
+docutils/
+docutils-0.14.dist-info/
+idna/
+idna-2.6.dist-info/
+jmespath/
+jmespath-0.9.3.dist-info/
+python_dateutil-2.6.1.dist-info/
+requests/
+requests-2.18.4.dist-info/
+s3transfer/
+s3transfer-0.1.10.dist-info/
+six-1.10.0.dist-info/
+six.py
+urllib3/
+urllib3-1.22.dist-info/
