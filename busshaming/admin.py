@@ -3,6 +3,7 @@ from django.contrib import admin
 from .models import (
     Agency,
     Feed,
+    FeedTimetable,
     RealtimeEntry,
     Route,
     Stop,
@@ -21,6 +22,11 @@ class AgencyAdmin(admin.ModelAdmin):
 
 @admin.register(Feed)
 class FeedAdmin(admin.ModelAdmin):
+    pass
+
+
+@admin.register(FeedTimetable)
+class FeedTimetableAdmin(admin.ModelAdmin):
     pass
 
 
