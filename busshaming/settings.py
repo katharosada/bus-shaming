@@ -129,5 +129,5 @@ STATICFILES_STORAGE = 'whitenoise.django.GzipManifestStaticFilesStorage'
 # Symlink settings_local.py to either conf/dev_settings.py or conf/prod_settings.py
 try:
     from .settings_local import *
-except ImportError:
-    pass
+except ImportError as e:
+    print(e)
