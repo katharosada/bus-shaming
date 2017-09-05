@@ -1,28 +1,33 @@
 # Ignore generated zip files of any name
 *.zip
 
+# Ignore environment variables file
+export_env.sh
+
 # Ignore dependencies
+boto3-1.4.7.dist-info/
 boto3/
-boto3-1.4.6.dist-info/
+botocore-1.7.3.dist-info/
 botocore/
-botocore-1.6.6.dist-info/
-certifi/
 certifi-2017.7.27.1.dist-info/
-chardet/
+certifi/
 chardet-3.0.4.dist-info/
+chardet/
 dateutil/
-docutils/
 docutils-0.14.dist-info/
-idna/
+docutils/
 idna-2.6.dist-info/
-jmespath/
+idna/
 jmespath-0.9.3.dist-info/
+jmespath/
+pg8000-1.11.0.dist-info/
+pg8000/
 python_dateutil-2.6.1.dist-info/
-requests/
 requests-2.18.4.dist-info/
+requests/
+s3transfer-0.1.11.dist-info/
 s3transfer/
-s3transfer-0.1.10.dist-info/
 six-1.10.0.dist-info/
 six.py
-urllib3/
 urllib3-1.22.dist-info/
+urllib3/

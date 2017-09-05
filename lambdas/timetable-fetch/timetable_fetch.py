@@ -1,12 +1,13 @@
 from datetime import datetime
 import os
+import time
 
 import boto3
-import psycopg2
+import pg8000
 import requests
 
 
-S3_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME', 'busshaming-timetable-dump')
+S3_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME', 'busshaming-timetable-dumps')
 
 GTFS_API_KEY = os.environ.get('TRANSPORT_NSW_API_KEY')
 FEED_SLUG = 'nsw-buses'
@@ -39,13 +40,14 @@ def upload_s3(filename, content):
 
 
 def main(event, context):
-    conn = psycopg2.connect(dbname=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT)
+    conn = pg8000.connect(database=DB_NAME, user=DB_USER, password=DB_PASSWORD, host=DB_HOST, port=DB_PORT)
     cur = conn.cursor()
     cur.execute(FETCH_URLS, (FEED_SLUG,))
-    time = datetime.utcnow()
+    curtime = datetime.utcnow()
     headers = {'Authorization': 'apikey ' + GTFS_API_KEY}
 
     for tf_id, url, last_modified in cur.fetchall():
+        time.sleep(1)
         print(f'Checking {url} ...')
         response = requests.head(url, headers=headers)
         if response.status_code == 200:
@@ -55,7 +57,7 @@ def main(event, context):
                 response = requests.get(url, headers=headers)
                 print('Fetching complete.')
                 if response.status_code == 200:
-                    filename = f'{FEED_SLUG}/{tf_id}/{time.isoformat()}.zip'
+                    filename = f'{FEED_SLUG}/{tf_id}/{curtime.isoformat()}.zip'
                     upload_s3(filename, response.content)
                     new_lmt = response.headers['last-modified']
                     cur.execute(UPDATE_LMT, (new_lmt, tf_id))
@@ -65,7 +67,7 @@ def main(event, context):
                     print(response.status_code)
                     print(response.content)
         else:
-            print('Fetch failed:')
+            print('Head fetch failed:')
             print(response.status_code)
             print(response.content)
     conn.close()
