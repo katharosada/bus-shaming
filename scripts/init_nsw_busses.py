@@ -30,7 +30,7 @@ def main():
     feed = Feed.objects.filter(slug='nsw-buses').first()
     if feed is None:
         print(f'Creating NSW busses feed')
-        feed = Feed(slug='nsw-buses', name='Transport NSW Buses', Timezone='Australia/Sydney')
+        feed = Feed(slug='nsw-buses', name='Transport NSW Buses', timezone='Australia/Sydney')
         feed.realtime_feed_url = 'https://api.transport.nsw.gov.au/v1/gtfs/realtime/buses/'
         feed.active = True
         feed.save()
@@ -39,7 +39,7 @@ def main():
     for suffix in SCHEDULE_SUFFIXES:
         url = os.path.join(SCHEDULE_URL, suffix)
         if url not in existing_timetable_urls:
-            print(f'Adding {timetable_url}')
+            print(f'Adding {url}')
             ft = FeedTimetable(feed=feed, timetable_url=url)
             ft.save()
 
