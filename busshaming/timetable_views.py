@@ -3,7 +3,6 @@ from datetime import datetime
 from django.shortcuts import get_object_or_404, render
 from django.views.decorators.csrf import ensure_csrf_cookie
 
-from busshaming import fetching
 from busshaming.models import Route, TripDate
 
 DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
@@ -16,9 +15,3 @@ def route_by_date(request, route_id, datestr):
     trip_dates = TripDate.objects.filter(date=date, trip__route=route)
     data = {'route': route, 'trip_dates': trip_dates}
     return render(request, 'route_by_date.html', context=data)
-
-
-@ensure_csrf_cookie
-def fetch_timetable(request):
-    fetching.fetch_timetable()
-    return render(request, 'index.html')
