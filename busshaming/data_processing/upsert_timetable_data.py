@@ -22,7 +22,7 @@ def process_agencies(feed, csvreader):
         agency.save()
 
 
-def process_routes(feed, csvreader):
+def process_routes(feed, csvreader, fetchtime):
     print('Processing routes')
 
     existing = {}
@@ -62,11 +62,11 @@ def process_routes(feed, csvreader):
             route.save()
 
 
-def process_trip_dates(csvreader):
+def process_trip_dates(csvreader, fetchtime):
     print('Processing trip dates')
     result = defaultdict(list)
-    limit = datetime.now().date() + timedelta(days=14)
-    today = datetime.now().date()
+    limit = fetchtime.date() + timedelta(days=14)
+    today = fetchtime.date()
     for row in csvreader:
         start_date = datetime.strptime((row['start_date']), '%Y%m%d').date()
         end_date = datetime.strptime((row['end_date']), '%Y%m%d').date()
@@ -85,7 +85,7 @@ def process_trip_dates(csvreader):
     return result
 
 
-def process_trips(feed, all_trip_dates, trip_stops, csvreader):
+def process_trips(feed, all_trip_dates, trip_stops, csvreader, fetchtime):
     print('Processing trips')
     existing = {}
     for trip in Trip.objects.filter(route__feed=feed).order_by('version'):
@@ -96,7 +96,7 @@ def process_trips(feed, all_trip_dates, trip_stops, csvreader):
         routes[route.gtfs_route_id] = route
 
     current_trip_dates = defaultdict(dict)
-    today = datetime.now().date()
+    today = fetchtime.date()
     yesterday = today - timedelta(days=1)
     for trip_date in TripDate.objects.filter(trip__route__feed=feed, date__gte=yesterday):
         current_trip_dates[trip_date.trip_id][trip_date.date] = trip_date
@@ -249,11 +249,11 @@ def process_stop_times(feed, csvreader):
     return new_stop_sets
 
 
-def process_zip(feed, zfile):
+def process_zip(feed, zfile, fetchtime):
     process_agencies(feed, csv.DictReader(io.TextIOWrapper(zfile.open('agency.txt'))))
-    process_routes(feed, csv.DictReader(io.TextIOWrapper(zfile.open('routes.txt'))))
+    process_routes(feed, csv.DictReader(io.TextIOWrapper(zfile.open('routes.txt'))), fetchtime)
     process_stops(feed, csv.DictReader(io.TextIOWrapper(zfile.open('stops.txt'))))
-    trip_dates = process_trip_dates(csv.DictReader(io.TextIOWrapper(zfile.open('calendar.txt'))))
+    trip_dates = process_trip_dates(csv.DictReader(io.TextIOWrapper(zfile.open('calendar.txt'))), fetchtime)
     trip_stops = process_stop_times(feed, csv.DictReader(io.TextIOWrapper(zfile.open('stop_times.txt'))))
-    process_trips(feed, trip_dates, trip_stops, csv.DictReader(io.TextIOWrapper(zfile.open('trips.txt'))))
+    process_trips(feed, trip_dates, trip_stops, csv.DictReader(io.TextIOWrapper(zfile.open('trips.txt'))), fetchtime)
     return True

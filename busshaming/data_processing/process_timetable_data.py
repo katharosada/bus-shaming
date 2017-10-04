@@ -1,6 +1,7 @@
 import os
 import tempfile
 import zipfile
+from datetime import datetime, timezone
 
 import boto3
 import pytz
@@ -39,14 +40,17 @@ def fetch_and_process_timetables():
     for timetable_feed in timetable_feeds:
         tmp_path, obj_key = download_zip(timetable_feed)
         if tmp_path is not None:
-            success = process_zip(feed, tmp_path)
+            # Get datetime from filename
+            datestr = os.path.split(obj_key)[1].rstrip('.zip')
+            fetchtime = datetime.strptime(datestr, '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=timezone.utc)
+            success = process_zip(feed, tmp_path, fetchtime)
             if success:
                 timetable_feed.last_processed_zip = obj_key
                 timetable_feed.save()
             os.remove(tmp_path)
 
 
-def process_zip(feed, tmp_path):
+def process_zip(feed, tmp_path, fetchtime):
     with zipfile.ZipFile(tmp_path) as zfile:
-        return upsert_timetable_data.process_zip(feed, zfile)
+        return upsert_timetable_data.process_zip(feed, zfile, fetchtime)
     return False
