@@ -48,7 +48,7 @@ def process_routes(feed, csvreader):
         values['short_name'] = route_row['route_short_name']
         values['long_name'] = route_row['route_long_name']
         values['description'] = route_row['route_desc']
-        values['url'] = route_row.get('route_url', '')
+        values['route_url'] = route_row.get('route_url', '')
         values['color'] = route_row['route_color']
         values['text_color'] = route_row['route_text_color']
 

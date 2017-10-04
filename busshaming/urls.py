@@ -8,14 +8,16 @@ from rest_framework import routers
 from busshaming import views
 from busshaming import timetable_views
 
-from .api import RouteViewSet
+from .api import RouteViewSet, TripViewSet
 
 router = routers.DefaultRouter()
 router.register(r'routes', RouteViewSet)
+router.register(r'trips', TripViewSet)
 
 urlpatterns = [
     url(r'^$', views.index),
     url(r'^timetable/route/(\d+)/date/(\d{8})', timetable_views.route_by_date),
     url(r'^api/', include(router.urls)),
+    url(r'^api-auth/', include('rest_framework.urls', namespace='rest_framework')),
     url(r'^admin/', admin.site.urls),
 ]

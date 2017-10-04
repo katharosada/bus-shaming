@@ -8,7 +8,7 @@ class Route(models.Model):
     short_name = models.CharField(max_length=200)
     long_name = models.CharField(max_length=200)
     description = models.CharField(blank=True, null=True, max_length=500)
-    url = models.CharField(blank=True, null=True, max_length=200)
+    route_url = models.CharField(blank=True, null=True, max_length=200)
     color = models.CharField(blank=True, null=True, max_length=7)
     text_color = models.CharField(blank=True, null=True, max_length=7)
 
