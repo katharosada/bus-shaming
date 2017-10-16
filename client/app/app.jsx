@@ -10,6 +10,8 @@ import createHistory from 'history/createBrowserHistory';
 import App from './containers/App/index';
 import createReducer from './reducers';
 
+import './app.less';
+
 const sagaMiddleware = createSagaMiddleware();
 
 function configureStore(initialSate, history) {
