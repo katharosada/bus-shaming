@@ -36,11 +36,26 @@ module.exports = (options) => ({
         }
       },
       {
+        test: /\.css$/,
+        use: "css-loader",
+      },
+      {
         test: /\.less$/,
         use: extractLess.extract({
           use: [
-            {loader: "css-loader"},
-            {loader: "less-loader"}
+            {
+              loader: "css-loader",
+              options: {
+                url: false,
+                import: false,
+              }
+            },
+            {
+              loader: "less-loader",
+              options: {
+                relativeUrls: false,
+              }
+            }
           ],
             fallback: "style-loader"
           }),

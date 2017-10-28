@@ -1,0 +1,36 @@
+@import "../../variables.less";
+@import "../../mixins.less";
+
+#main-header {
+  background-color: white;
+  /*border-bottom: 1px solid @lowlight1;*/
+  border-bottom: 3px solid @highlight1;
+  margin: 0;
+
+  a > h1 {
+    display: inline-block;
+    color: @title-color;
+    margin: 10px 20px;
+  }
+  nav {
+    .column-width();
+  }
+  ul {
+    list-style: none;
+    padding-left: 0;
+    display: inline-block;
+  }
+  li {
+    color: @header-link-color;
+    display: inline-block;
+    margin-right: 20px;
+  }
+  li > a {
+    color: @header-link-color;
+    text-decoration: none;
+    &:hover {
+      text-decoration: underline;
+    }
+  }
+}
+
