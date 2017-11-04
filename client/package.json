@@ -6,7 +6,7 @@
   "scripts": {
     "webpack-dev": "webpack --config webpack.dev.config.js",
     "webpack-prod": "webpack --config webpack.prod.config.js",
-    "devserver": "webpack-dev-server --config webpack.dev.config.js"
+    "devserver": "webpack-dev-server --config webpack.dev.config.js --history-api-fallback"
   },
   "dependencies": {
     "css-loader": "^0.28.7",
