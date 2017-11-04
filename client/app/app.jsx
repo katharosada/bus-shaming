@@ -3,10 +3,12 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { Provider } from 'react-redux';
 import { createStore, applyMiddleware, compse } from 'redux';
+import 'regenerator-runtime/runtime';
 import createSagaMiddleware from 'redux-saga';
 import { ConnectedRouter, routerMiddleware } from 'react-router-redux';
 import createHistory from 'history/createBrowserHistory';
 
+import { findRoutePageSagas } from './containers/FindRoutePage/sagas';
 import App from './containers/App/index';
 import createReducer from './reducers';
 
@@ -25,8 +27,10 @@ function configureStore(initialSate, history) {
     fromJS(initialState),
     applyMiddleware(...middleware)
   );
+  sagaMiddleware.run(findRoutePageSagas);
   return store;
 };
+
 
 
 const initialState = {};

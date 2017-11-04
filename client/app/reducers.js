@@ -5,6 +5,7 @@ import { fromJS } from 'immutable';
 import { combineReducers } from 'redux-immutable';
 import { LOCATION_CHANGE } from 'react-router-redux';
 
+import { findRoutePageReducer } from './containers/FindRoutePage/reducer';
 
 /*
  * Reducer for routing
@@ -30,6 +31,7 @@ function routeReducer(state, action) {
 export default function createReducer() {
   return combineReducers({
     route: routeReducer,
+    FindRoutePage: findRoutePageReducer,
   });
 }
 
