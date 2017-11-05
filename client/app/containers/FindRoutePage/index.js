@@ -20,7 +20,7 @@ function FindRoutePage(props) {
           <input type="submit" value="Search" />
         </form>
         <p>{ props.inProgress ? 'loading...' : '' }</p>
-        <p>{props.searchResults}</p>
+        <p>{JSON.stringify(props.searchResults)}</p>
       </div>
   );
 };
