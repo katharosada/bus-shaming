@@ -1,4 +1,4 @@
-from rest_framework import mixins, serializers, viewsets
+from rest_framework import filters, mixins, serializers, viewsets
 
 from .models import Route, Trip
 
@@ -29,3 +29,5 @@ class RouteSerializer(serializers.HyperlinkedModelSerializer):
 class RouteViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = Route.objects.all()
     serializer_class = RouteSerializer
+    filter_backends = (filters.SearchFilter,)
+    search_fields = ('short_name', 'long_name', 'description')
