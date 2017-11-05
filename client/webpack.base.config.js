@@ -11,7 +11,6 @@ const extractLess = new ExtractTextPlugin({
   filename: "[name].css",
 });
 
-
 module.exports = (options) => ({
   entry: './app/app.jsx',
   output: Object.assign({
