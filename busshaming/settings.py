@@ -22,6 +22,7 @@ SECRET_KEY = os.environ.get('DJANGO_SECRET_KEY')
 
 INSTALLED_APPS = [
     'busshaming',
+    'corsheaders',
     'rest_framework',
     'django.contrib.gis',
     'django.contrib.admin',
@@ -33,6 +34,7 @@ INSTALLED_APPS = [
 ]
 
 MIDDLEWARE_CLASSES = [
+    'corsheaders.middleware.CorsMiddleware',
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',

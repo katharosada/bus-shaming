@@ -1,5 +1,6 @@
 boto3==1.4.7
 Django==1.11.4
+django-cors-headers==2.1.0
 djangorestframework==3.6.3
 dj-database-url==0.4.2
 gtfs-realtime-bindings==0.0.5

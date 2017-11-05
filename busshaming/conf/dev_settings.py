@@ -23,6 +23,13 @@ DEBUG = True
 
 ALLOWED_HOSTS = []
 
+CORS_ORIGIN_WHITELIST = (
+    '127.0.0.1:8000',
+    'localhost:8000',
+    '127.0.0.1:8080',
+    'localhost:8080',
+)
+
 ROOT_URLCONF = 'busshaming.urls'
 
 # Database
