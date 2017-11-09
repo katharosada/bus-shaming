@@ -28,6 +28,8 @@ export function searchStarted() {
 export function searchCompleted(results) {
   return {
     type: SEARCH_COMPLETED,
-    results: results,
+    results: results['results'],
+    resultCount: results['count'],
+    nextUrl: results['next']
   };
 }

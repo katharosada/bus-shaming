@@ -11,7 +11,9 @@ import {
 const initialState = fromJS({
   searchTerm: '',
   searchInProgress: false,
-  searchResults: [],
+  searchResults: null,
+  nextUrl: '',
+  resultCount: 0,
 });
 
 export function findRoutePageReducer(state = initialState, action) {
@@ -21,7 +23,12 @@ export function findRoutePageReducer(state = initialState, action) {
     case SEARCH_STARTED:
       return state.set('searchInProgress', true);
     case SEARCH_COMPLETED:
-      return state.set('searchInProgress', false).set('searchResults', action.results);
+      return state.merge({
+        'searchInProgress': false,
+        'searchResults': action.results,
+        'nextUrl': action.nextUrl,
+        'resultCount': action.resultCount,
+      });
     default:
       return state;
   }
