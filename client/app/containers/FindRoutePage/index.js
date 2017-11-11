@@ -2,7 +2,7 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { compose } from 'redux';
 
-import { changeSearchTerm, startSearch } from './actions';
+import { changeSearchTerm, loadMoreSearchResults, startSearch } from './actions';
 import { RouteSearchResults } from '../../components/SearchResults/index';
 
 /*
@@ -17,7 +17,6 @@ function FindRoutePage(props) {
   if (props.searchResults !== null) {
     results = <RouteSearchResults
           searchResults={ props.searchResults }
-          nextUrl={ props.nextUrl }
           resultCount={ props.resultCount }
         />
   }
@@ -34,6 +33,21 @@ function FindRoutePage(props) {
           <input type="submit" value="Search" />
         </form>
         { results }
+        {
+          props.loadNextInProgress ?
+            <p>Loading...</p>
+          :
+            null
+        }
+        {
+          props.nextUrl !== null ?
+            <div>
+              <button onClick={props.onClickLoadMore}>Load more</button>
+            </div>
+          :
+            null
+        }
+        <p>&nbsp;</p>
       </div>
   );
 };
@@ -44,8 +58,9 @@ const mapStateToProps = function(state) {
     searchTerm: localState.get('searchTerm'),
     inProgress: localState.get('searchInProgress'),
     searchResults: localState.get('searchResults'),
-    nextUrl: localState.get('nextUrl'),
     resultCount: localState.get('resultCount'),
+    nextUrl: localState.get('nextUrl'),
+    loadNextInProgress: localState.get('loadNextInProgress'),
   };
 };
 
@@ -60,6 +75,9 @@ const mapDispatchToProps = function(dispatch) {
     onChangeSearchTerm: (evt) => {
       dispatch(changeSearchTerm(evt.target.value));
     },
+    onClickLoadMore: (evt) => {
+      dispatch(loadMoreSearchResults());
+    }
   };
 };
 

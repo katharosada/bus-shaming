@@ -6,7 +6,16 @@
 }
 
 .route-result {
-  padding: 10px 0;
+  padding: 10px 10px;
+  border-bottom: 1px solid @hint-text-color;
+
+  &:hover {
+    background-color: @highlight-text-color;
+  }
+
+  &:first-of-type {
+    border-top: 1px solid @hint-text-color;
+  }
 
   .route-label-box {
     display: inline-block;
