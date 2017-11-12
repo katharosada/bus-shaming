@@ -15,6 +15,7 @@ module.exports = (options) => ({
   entry: './app/app.jsx',
   output: Object.assign({
     path: path.resolve(__dirname, "build"),
+    publicPath: "/"
   }, options.output),
   module: {
     loaders: [
