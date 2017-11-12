@@ -1,4 +1,5 @@
 import React from 'react';
+import { Link } from 'react-router-dom';
 
 import './styles.less';
 
@@ -14,19 +15,21 @@ export function RouteSearchResults(props) {
           'backgroundColor': '#' + result.get('color'),
           'color': '#' + result.get('text_color'),
         };
-        return <div key={ key } className="route-result">
-          <div className="route-label-box">
-            <span className="route-label" style={style}>{ result.get('short_name')}</span>
+        return <Link key={ key } to={ "route/" + key }>
+          <div className="route-result">
+            <div className="route-label-box">
+              <span className="route-label" style={style}>{ result.get('short_name')}</span>
+            </div>
+            <div className="route-description">
+              <p className="route-name">
+                { result.get('long_name') }
+              </p>
+              <p className="description">
+                { result.get('description') }
+              </p>
+            </div>
           </div>
-          <div className="route-description">
-            <p className="route-name">
-              { result.get('long_name') }
-            </p>
-            <p className="description">
-              { result.get('description') }
-            </p>
-          </div>
-        </div>;
+        </Link>;
       })
     }
     </div>

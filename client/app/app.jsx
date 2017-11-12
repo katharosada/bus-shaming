@@ -9,6 +9,7 @@ import { ConnectedRouter, routerMiddleware } from 'react-router-redux';
 import createHistory from 'history/createBrowserHistory';
 
 import { findRoutePageSagas } from './containers/FindRoutePage/sagas';
+import { routePageSagas } from './containers/RoutePage/sagas';
 import App from './containers/App/index';
 import createReducer from './reducers';
 
@@ -28,6 +29,7 @@ function configureStore(initialSate, history) {
     applyMiddleware(...middleware)
   );
   sagaMiddleware.run(findRoutePageSagas);
+  sagaMiddleware.run(routePageSagas);
   return store;
 };
 

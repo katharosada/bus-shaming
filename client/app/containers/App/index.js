@@ -3,6 +3,7 @@ import { Switch, Route, Link } from 'react-router-dom';
 
 import HomePage from '../HomePage/index';
 import FindRoutePage from '../FindRoutePage/index';
+import RoutePage from '../RoutePage/index';
 import Header from '../../components/Header/index.js';
 import Footer from '../../components/Footer/index.js';
 
@@ -17,6 +18,7 @@ export default function App() {
           <Switch>
             <Route exact path="/" component={HomePage} />
             <Route path="/find" component={FindRoutePage} />
+            <Route path="/route/:id" component={RoutePage} />
           </Switch>
         </div>
         <Footer />
