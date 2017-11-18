@@ -95,11 +95,8 @@ def process_trips(feed, all_trip_dates, trip_stops, csvreader, fetchtime):
     for route in Route.objects.filter(feed=feed):
         routes[route.gtfs_route_id] = route
 
-    current_trip_dates = defaultdict(dict)
     today = fetchtime.date()
     yesterday = today - timedelta(days=1)
-    for trip_date in TripDate.objects.filter(trip__route__feed=feed, date__gte=yesterday):
-        current_trip_dates[trip_date.trip_id][trip_date.date] = trip_date
 
     for trip_row in csvreader:
         gtfs_route_id = trip_row['route_id']
@@ -144,7 +141,9 @@ def process_trips(feed, all_trip_dates, trip_stops, csvreader, fetchtime):
             TripStop.objects.bulk_create(to_create)
 
         trip_dates = all_trip_dates[trip_row['service_id']]
-        old_trip_dates = current_trip_dates[trip.id]
+        old_trip_dates = {}
+        for trip_date in TripDate.objects.filter(date__gte=yesterday, trip_id=trip.id):
+            old_trip_dates[trip_date.date] = trip_date
         for new_trip_date in trip_dates:
             old_trip_date = old_trip_dates.pop(new_trip_date, None)
             if old_trip_date is None:
@@ -192,11 +191,6 @@ def process_stop_times(feed, csvreader):
     for trip in Trip.objects.filter(route__feed=feed):
         trips[trip.id] = trip
 
-    existing = defaultdict(lambda: defaultdict(list))
-    for tripstop in TripStop.objects.filter(stop__feed=feed).order_by('trip_id', 'sequence'):
-        trip = trips[tripstop.trip_id]
-        existing[trip.gtfs_trip_id][trip.version].append(tripstop)
-
     # If the stop times have changed we want to create a new trip version for them
     # later on when we create the trips. Otherwise we don't care.
     stop_sets = defaultdict(list)  # {gtfs_trip_id: [stop1, stop2, ...]}
@@ -215,12 +209,12 @@ def process_stop_times(feed, csvreader):
     new_stop_sets = {}
     for gtfs_trip_id in stop_sets:
         stop_sets[gtfs_trip_id].sort(key=lambda stop: stop['sequence'])
-        existing_stopsets = existing[gtfs_trip_id]
-        existing_stops = None
-        if len(existing_stopsets) != 0:
-            latest_version = sorted(existing_stopsets)[-1]
-            existing_stops = existing_stopsets[latest_version]
-            # TODO: Add to new_stop_sets only if changed
+        latest_trip = Trip.objects.filter(route__feed=feed, gtfs_trip_id=gtfs_trip_id).order_by('-version').first()
+        existing_stops = []
+        if latest_trip is not None:
+            existing_stops = list(TripStop.objects.filter(trip_id=latest_trip.id).order_by('sequence'))
+
+        if len(existing_stops) != 0:
             if len(existing_stops) != len(stop_sets[gtfs_trip_id]):
                 print('MISMATCH', existing_stops[0].trip_id)
                 new_stop_sets[gtfs_trip_id] = stop_sets[gtfs_trip_id]
