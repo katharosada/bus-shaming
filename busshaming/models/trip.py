@@ -6,6 +6,7 @@ class Trip(models.Model):
     version = models.IntegerField(default=0)
     active = models.BooleanField()
     route = models.ForeignKey('Route')
+    stop_sequence = models.ForeignKey('StopSequence', blank=True, null=True)
     trip_headsign = models.CharField(max_length=200, blank=True, null=True)
     trip_short_name = models.CharField(max_length=200, blank=True, null=True)
     direction = models.SmallIntegerField()
