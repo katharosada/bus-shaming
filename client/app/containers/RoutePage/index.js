@@ -2,6 +2,8 @@ import React from 'react';
 import { connect } from 'react-redux';
 import { compose } from 'redux';
 
+import { StopSequenceDisplay } from '../../components/StopSequenceDisplay/index';
+
 import {
   loadRoute,
 } from './actions';
@@ -12,6 +14,12 @@ function RouteDisplay(props) {
     <h1>Bus route { route.get('short_name') }</h1>
     <p>{ route.get('long_name') }</p>
     <p>{ route.get('description') }</p>
+    <h3>Variations:</h3>
+    {
+      route.get('stopsequence_set').map((stop_sequence) => {
+        return <StopSequenceDisplay key={stop_sequence.get('sequence_hash')} sequence={stop_sequence}></StopSequenceDisplay>
+      })
+    }
   </div>
 }
 

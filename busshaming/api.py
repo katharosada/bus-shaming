@@ -26,21 +26,24 @@ class StopSequenceSerializer(serializers.HyperlinkedModelSerializer):
         fields = ('id', 'sequence_hash', 'stop_sequence', 'length', 'route', 'trip_headsign', 'trip_short_name', 'direction', 'trip_set')
 
 
+class StopSequenceLiteSerializer(serializers.HyperlinkedModelSerializer):
+    class Meta:
+        model = StopSequence
+        fields = ('id', 'sequence_hash', 'stop_sequence', 'length', 'route', 'trip_headsign', 'trip_short_name', 'direction')
+
+
 class StopSequenceViewSet(viewsets.ReadOnlyModelViewSet):
     queryset = StopSequence.objects.all()
     serializer_class = StopSequenceSerializer
 
 
 class RouteSerializer(serializers.HyperlinkedModelSerializer):
-    stopsequence_set = serializers.HyperlinkedRelatedField(
-        many=True,
-        read_only=True,
-        view_name='stopsequence-detail'
-    )
+    stopsequence_set = StopSequenceLiteSerializer
 
     class Meta:
         model = Route
         fields = ('id', 'url', 'gtfs_route_id', 'short_name', 'long_name', 'description', 'color', 'text_color', 'route_url', 'stopsequence_set')
+        depth = 1
 
 
 class RouteViewSet(viewsets.ReadOnlyModelViewSet):
