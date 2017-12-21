@@ -1,6 +1,6 @@
 from rest_framework import filters, mixins, serializers, viewsets
 
-from .models import Route, Trip
+from .models import Route, StopSequence, Trip
 
 
 class TripSerializer(serializers.HyperlinkedModelSerializer):
@@ -14,7 +14,7 @@ class TripViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = TripSerializer
 
 
-class RouteSerializer(serializers.HyperlinkedModelSerializer):
+class StopSequenceSerializer(serializers.HyperlinkedModelSerializer):
     trip_set = serializers.HyperlinkedRelatedField(
         many=True,
         read_only=True,
@@ -22,8 +22,25 @@ class RouteSerializer(serializers.HyperlinkedModelSerializer):
     )
 
     class Meta:
+        model = StopSequence
+        fields = ('id', 'sequence_hash', 'stop_sequence', 'length', 'route', 'trip_headsign', 'trip_short_name', 'direction', 'trip_set')
+
+
+class StopSequenceViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = StopSequence.objects.all()
+    serializer_class = StopSequenceSerializer
+
+
+class RouteSerializer(serializers.HyperlinkedModelSerializer):
+    stopsequence_set = serializers.HyperlinkedRelatedField(
+        many=True,
+        read_only=True,
+        view_name='stopsequence-detail'
+    )
+
+    class Meta:
         model = Route
-        fields = ('id', 'url', 'gtfs_route_id', 'short_name', 'long_name', 'description', 'color', 'text_color', 'route_url', 'trip_set')
+        fields = ('id', 'url', 'gtfs_route_id', 'short_name', 'long_name', 'description', 'color', 'text_color', 'route_url', 'stopsequence_set')
 
 
 class RouteViewSet(viewsets.ReadOnlyModelViewSet):

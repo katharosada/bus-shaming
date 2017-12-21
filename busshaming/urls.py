@@ -8,11 +8,12 @@ from rest_framework import routers
 from busshaming import views
 from busshaming import timetable_views
 
-from .api import RouteViewSet, TripViewSet
+from .api import RouteViewSet, StopSequenceViewSet, TripViewSet
 
 router = routers.DefaultRouter()
 router.register(r'routes', RouteViewSet)
 router.register(r'trips', TripViewSet)
+router.register(r'sequences', StopSequenceViewSet)
 
 urlpatterns = [
     url(r'^$', views.index),
