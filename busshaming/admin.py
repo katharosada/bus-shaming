@@ -7,6 +7,7 @@ from .models import (
     RealtimeEntry,
     Route,
     Stop,
+    StopSequence,
     Trip,
     TripDate,
     TripStop,
@@ -48,6 +49,12 @@ class RouteAdmin(admin.ModelAdmin):
 class StopAdmin(admin.ModelAdmin):
     search_fields = ('gtfs_stop_id', 'name')
     list_filter = ('feed',)
+
+
+@admin.register(StopSequence)
+class StopSequenceAdmin(admin.ModelAdmin):
+    list_display = ('trip_headsign', 'trip_short_name', 'direction', 'length')
+    search_fields = ('trip_headsign', 'trip_short_name', 'length')
 
 
 @admin.register(Trip)
