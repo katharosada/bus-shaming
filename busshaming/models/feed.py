@@ -8,6 +8,7 @@ class Feed(models.Model):
     timezone = models.CharField(max_length=200)
     realtime_feed_url = models.URLField()
     active = models.BooleanField()
+    last_processed_dump = models.CharField(max_length=50, blank=True, null=True)
 
     def __str__(self):
         return f'{self.slug} - {self.name}'
