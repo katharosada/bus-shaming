@@ -83,6 +83,7 @@ def fetch_next_dumps(feed, num_dumps):
 
 
 def process_next(num_dumps):
+    num_dumps = 1
     feed = Feed.objects.get(slug='nsw-buses')
     cached_dumps = fetch_next_dumps(feed, num_dumps)
     feed_tz = pytz.timezone(feed.timezone)
