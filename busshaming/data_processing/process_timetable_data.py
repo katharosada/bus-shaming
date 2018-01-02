@@ -1,7 +1,7 @@
 import os
 import tempfile
 import zipfile
-from datetime import datetime, timezone
+from datetime import datetime, timedelta, timezone
 
 import boto3
 import pytz
@@ -34,15 +34,35 @@ def download_zip(timetable_feed):
     return None, None
 
 
+def fill_tripdate_gap(feed, last_processed_file, new_file):
+    # If it's been almost 2 weeks from the last timetable, we need to update the trip dates
+    # since we only fill them 2 weeks in advance
+    new_fetchtime = datetime_from_s3_key(last_processed_file) + timedelta(days=13)
+    while new_fetchtime < datetime_from_s3_key(new_file):
+        s3 = boto3.resource('s3')
+        tmp, tmp_path = tempfile.mkstemp()
+        s3.Object(S3_BUCKET_NAME, last_processed_file).download_file(tmp_path)
+        print(f'Updating tripdate gap to time: {new_fetchtime}')
+        process_zip(feed, tmp_path, new_fetchtime)
+        new_fetchtime += timedelta(days=13)
+
+
+def datetime_from_s3_key(obj_key):
+    datestr = os.path.split(obj_key)[1].rstrip('.zip')
+    fetchtime = datetime.strptime(datestr, '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=timezone.utc)
+    return fetchtime
+
+
 def fetch_and_process_timetables():
     feed = Feed.objects.get(slug='nsw-buses')
-    timetable_feeds = FeedTimetable.objects.filter(feed=feed).prefetch_related('feed')
+    timetable_feeds = FeedTimetable.objects.filter(feed=feed).order_by('id').prefetch_related('feed')
     for timetable_feed in timetable_feeds:
         tmp_path, obj_key = download_zip(timetable_feed)
         if tmp_path is not None:
+            # Fill potential trip date gap:
+            fill_tripdate_gap(feed, timetable_feed.last_processed_zip, obj_key)
             # Get datetime from filename
-            datestr = os.path.split(obj_key)[1].rstrip('.zip')
-            fetchtime = datetime.strptime(datestr, '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=timezone.utc)
+            fetchtime = datetime_from_s3_key(obj_key)
             success = process_zip(feed, tmp_path, fetchtime)
             if success:
                 timetable_feed.last_processed_zip = obj_key

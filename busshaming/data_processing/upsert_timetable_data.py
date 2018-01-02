@@ -41,7 +41,7 @@ def process_routes(feed, csvreader, fetchtime):
         else:
             changed = True
             route = Route(feed=feed, gtfs_route_id=gtfs_route_id)
-            print('New route {route}')
+            print(f'New route {route}')
         gtfs_agency_id = route_row['agency_id']
         values = {}
         values['agency_id'] = agencies[gtfs_agency_id].id
@@ -237,7 +237,6 @@ def process_stop_times(feed, csvreader):
                     print('Intending to create new trip version for {gtfs_trip_id}')
                     new_stop_sets[gtfs_trip_id] = stop_sets[gtfs_trip_id]
         else:
-            print('Trip {} did not previously have stops'.format(gtfs_trip_id))
             # this trip has no stops already so we don't need to compare
             new_stop_sets[gtfs_trip_id] = stop_sets[gtfs_trip_id]
     return new_stop_sets
