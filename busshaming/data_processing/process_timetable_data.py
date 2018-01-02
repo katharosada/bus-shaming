@@ -60,7 +60,8 @@ def fetch_and_process_timetables():
         tmp_path, obj_key = download_zip(timetable_feed)
         if tmp_path is not None:
             # Fill potential trip date gap:
-            fill_tripdate_gap(feed, timetable_feed.last_processed_zip, obj_key)
+            if timetable_feed.last_processed_zip:
+                fill_tripdate_gap(feed, timetable_feed.last_processed_zip, obj_key)
             # Get datetime from filename
             fetchtime = datetime_from_s3_key(obj_key)
             success = process_zip(feed, tmp_path, fetchtime)
