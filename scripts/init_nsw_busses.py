@@ -23,6 +23,19 @@ SCHEDULE_SUFFIXES = [
     'buses/SMBSC015',
     'buses/Nightride',
     'buses/Major_Event',
+    'buses/OSMBSC001',
+    'buses/OSMBSC002',
+    'buses/OSMBSC003',
+    'buses/OSMBSC004',
+    'buses/OSMBSC005',
+    'buses/OSMBSC006',
+    'buses/OSMBSC007',
+    'buses/OSMBSC008',
+    'buses/OSMBSC009',
+    'buses/OSMBSC010',
+    'buses/OSMBSC011',
+    'buses/OSMBSC012',
+    'buses/NISC001',
 ]
 
 
