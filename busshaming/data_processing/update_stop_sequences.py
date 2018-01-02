@@ -13,10 +13,18 @@ def upsert_stop_sequence(trip, sequence):
         except StopSequence.DoesNotExist:
             stop_sequence = StopSequence(sequence_hash=keyhash, stop_sequence=key, route_id=trip.route_id)
             stop_sequence.length = len(sequence)
+            stop_sequence.direction = trip.direction
             print('Adding new stop sequence for trip ' + str(trip))
-        stop_sequence.trip_headsign = trip.trip_headsign
-        stop_sequence.trip_short_name = trip.trip_short_name
-        stop_sequence.direction = trip.direction
+
+        if trip.trip_short_name:
+            stop_sequence.trip_headsign = trip.trip_headsign
+            stop_sequence.trip_short_name = trip.trip_short_name
+            stop_sequence.direction = trip.direction
+        elif stop_sequence.trip_short_name:
+            trip.trip_short_name = stop_sequence.trip_short_name
+            trip.trip_headsign = stop_sequence.trip_headsign
+            trip.direction = stop_sequence.direction
+
         stop_sequence.save()
         trip.stop_sequence = stop_sequence
         trip.save()

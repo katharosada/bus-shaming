@@ -14,6 +14,7 @@ class Trip(models.Model):
     bikes_allowed = models.BooleanField()
     notes = models.TextField(blank=True, null=True)
     created_at = models.DateTimeField(auto_now_add=True)
+    added_from_realtime = models.BooleanField(default=False)
 
     class Meta:
         unique_together = ('gtfs_trip_id', 'version', 'route')
