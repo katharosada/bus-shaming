@@ -5,6 +5,7 @@ from .models import (
     Feed,
     FeedTimetable,
     RealtimeEntry,
+    RealtimeProgress,
     Route,
     Stop,
     StopSequence,
@@ -32,10 +33,16 @@ class FeedTimetableAdmin(admin.ModelAdmin):
 
 
 @admin.register(RealtimeEntry)
-class RealtimeEntry(admin.ModelAdmin):
+class RealtimeEntryAdmin(admin.ModelAdmin):
     list_display = ('trip_date', 'stop', 'sequence', 'arrival_time', 'arrival_delay')
     raw_id_fields = ('trip_date', 'stop')
     readonly_fields = ('id',)
+
+
+@admin.register(RealtimeProgress)
+class RealtimeProgressAdmin(admin.ModelAdmin):
+    list_display = ('feed', 'start_date', 'last_processed_dump', 'in_progress', 'completed')
+    ordering = ('start_date',)
 
 
 @admin.register(Route)
