@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta, timezone
+from datetime import datetime, timedelta, timezone, time
 import tempfile
 
 import boto3
@@ -94,9 +94,11 @@ def get_stop(feed, stop_id, stops):
     return stop
 
 
-def process_trip_update(feed, trip_dates, stops, feed_tz, trip_update, threshold):
+def process_trip_update(feed, trip_dates, stops, feed_tz, trip_update, threshold, start_date_str):
     global_stats['trip_updates_found'] += 1
     trip = trip_update.trip
+    if trip.start_date != start_date_str:
+        return
     key = (trip.trip_id, trip.start_date)
     if key not in trip_dates:
         trip_date = add_missing_tripdate(feed, trip)
@@ -126,7 +128,7 @@ def process_trip_update(feed, trip_dates, stops, feed_tz, trip_update, threshold
             global_stats['stop_updates_stored'] += 1
 
 
-def process_dump_contents(feed, contents, trip_dates, stops, fetchtime, feed_tz):
+def process_dump_contents(feed, contents, trip_dates, stops, fetchtime, feed_tz, start_date_str):
     global global_stats
     global_stats = {
         'trip_updates_found': 0,
@@ -143,28 +145,30 @@ def process_dump_contents(feed, contents, trip_dates, stops, fetchtime, feed_tz)
     threshold = int((fetchtime + timedelta(minutes=5)).timestamp())
     for entity in feed_message.entity:
         if entity.HasField('trip_update'):
-            process_trip_update(feed, trip_dates, stops, feed_tz, entity.trip_update, threshold)
+            process_trip_update(feed, trip_dates, stops, feed_tz, entity.trip_update, threshold, start_date_str)
     for stat in global_stats:
         print(f'{stat}: {global_stats[stat]}')
 
 
-def fetch_next_dumps(feed, num_dumps):
-    print(f'Processing next {num_dumps} realtime dumps')
+def fetch_next_dumps(realtime_progress, num_dumps):
+    print(f'Processing next {num_dumps} realtime dumps in {realtime_progress}')
     client = boto3.client('s3')
-    file_prefix = f'{feed.slug}/'
-    last_processed_file = feed.last_processed_dump
+    file_prefix = f'{realtime_progress.feed.slug}/'
+
+    last_processed_file = realtime_progress.last_processed_dump
+    if last_processed_file is None:
+        last_processed_file = file_prefix + realtime_progress.start_time().strftime('%Y-%m-%dT%H:%M:%S.%f')
 
     if last_processed_file is not None:
-        response = client.list_objects_v2(Bucket=S3_BUCKET_NAME, Prefix=file_prefix, StartAfter=last_processed_file)
+        response = client.list_objects_v2(Bucket=S3_BUCKET_NAME, Prefix=file_prefix, StartAfter=last_processed_file, MaxKeys=num_dumps)
     else:
-        response = client.list_objects_v2(Bucket=S3_BUCKET_NAME, Prefix=file_prefix)
+        response = client.list_objects_v2(Bucket=S3_BUCKET_NAME, Prefix=file_prefix, MaxKeys=num_dumps)
 
     results = []
 
     if response['KeyCount'] != 0:
-        print(f'{response["KeyCount"]} new realtime dump(s) for {feed}')
-        for i in range(num_dumps):
-            key = response['Contents'][i]['Key']
+        for content in response['Contents']:
+            key = content['Key']
             s3 = boto3.resource('s3')
             tmp, tmp_path = tempfile.mkstemp()
             if DEBUG:
@@ -176,38 +180,47 @@ def fetch_next_dumps(feed, num_dumps):
     return results
 
 
-def process_next(num_dumps):
-    feed = Feed.objects.get(slug='nsw-buses')
-    cached_dumps = fetch_next_dumps(feed, num_dumps)
-    feed_tz = pytz.timezone(feed.timezone)
+def process_next(realtime_progress, num_dumps):
+    feed = realtime_progress.feed
+    realtime_progress.take_processing_lock()
+    try:
+        cached_dumps = fetch_next_dumps(realtime_progress, num_dumps)
+        feed_tz = pytz.timezone(feed.timezone)
+        start_date_str = realtime_progress.start_date.strftime('%Y%m%d')
 
-    if len(cached_dumps) != 0:
-        # Prefetch stops
-        stops = {}
-        for stop in Stop.objects.filter(feed=feed):
-            stops[stop.gtfs_stop_id] = stop
+        if len(cached_dumps) != 0:
+            # Prefetch stops
+            stops = {}
+            for stop in Stop.objects.filter(feed=feed):
+                stops[stop.gtfs_stop_id] = stop
 
-        # Prefetch Trip Dates
-        first_key = cached_dumps[0][0]
-        trip_dates = {}
-        datestr = os.path.split(first_key)[1].rstrip('.pb')
-        fetchtime = datetime.strptime(datestr, '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=timezone.utc)
-        # Assume no bus runs longer than 48h
-        fetchtime = fetchtime.astimezone(feed_tz)
-        start = (fetchtime - timedelta(days=2)).date()
-        end = (fetchtime + timedelta(days=2, minutes=len(cached_dumps))).date()
-        for trip_date in TripDate.objects.filter(date__gte=start, date__lte=end).prefetch_related('trip'):
-            datestr = trip_date.date.strftime('%Y%m%d')
-            trip_dates[(trip_date.trip.gtfs_trip_id, datestr)] = trip_date
-
-        for key, tmp_file in cached_dumps:
-            datestr = os.path.split(key)[1].rstrip('.pb')
+            # Prefetch Trip Dates
+            first_key = cached_dumps[0][0]
+            trip_dates = {}
+            datestr = os.path.split(first_key)[1].rstrip('.pb')
             fetchtime = datetime.strptime(datestr, '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=timezone.utc)
             # Assume no bus runs longer than 48h
             fetchtime = fetchtime.astimezone(feed_tz)
-            with open(tmp_file, 'rb') as f:
-                contents = f.read()
-                print(f'Processing {key}')
-                process_dump_contents(feed, contents, trip_dates, stops, fetchtime, feed_tz)
-            feed.last_processed_dump = key
-            feed.save()
+            start = (fetchtime - timedelta(days=2)).date()
+            end = (fetchtime + timedelta(days=2, minutes=len(cached_dumps))).date()
+            for trip_date in TripDate.objects.filter(date=realtime_progress.start_date).prefetch_related('trip'):
+                datestr = trip_date.date.strftime('%Y%m%d')
+                trip_dates[(trip_date.trip.gtfs_trip_id, datestr)] = trip_date
+
+            for key, tmp_file in cached_dumps:
+                datestr = os.path.split(key)[1].rstrip('.pb')
+                fetchtime = datetime.strptime(datestr, '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=timezone.utc)
+                # Assume no bus runs longer than 48h
+                fetchtime = fetchtime.astimezone(feed_tz)
+                with open(tmp_file, 'rb') as f:
+                    contents = f.read()
+                    print(f'Processing {key}')
+                    process_dump_contents(feed, contents, trip_dates, stops, fetchtime, feed_tz, start_date_str)
+                # Update where we're up to.
+                if fetchtime > realtime_progress.end_time():
+                    realtime_progress.update_progress(key, True)
+                    break
+                else:
+                    realtime_progress.update_progress(key, False)
+    finally:
+        realtime_progress.release_processing_lock()
