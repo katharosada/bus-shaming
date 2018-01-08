@@ -2,6 +2,8 @@ import os
 from datetime import datetime, timedelta, timezone, time
 import tempfile
 
+from django.db import transaction
+
 import boto3
 import pytz
 from google.transit import gtfs_realtime_pb2
@@ -21,76 +23,88 @@ def add_missing_tripdate(feed, realtime_trip):
     if DEBUG:
         print(f'Adding missing trip date for gtfs id {gtfs_trip_id} on date {start_date}')
     date = datetime.strptime(start_date, '%Y%m%d').date()
-    try:
-        trip = Trip.objects.get(gtfs_trip_id=gtfs_trip_id)
-        if DEBUG:
-            print(f'Found trip: {trip}')
-        if TripDate.objects.filter(trip=trip, date=date).count() == 0:
-            tripdate = TripDate(trip=trip, date=date, added_from_realtime=True)
-            tripdate.save()
-            global_stats['missing_tripdates'] += 1
-            return tripdate
-        return TripDate.objects.get(trip=trip, date=date)
-    except Trip.DoesNotExist as e:
-        if DEBUG:
-            print(f'Trip with gtfs id {gtfs_trip_id} does not exist!!')
+
+    with transaction.atomic():
         try:
-            route = Route.objects.get(feed=feed, gtfs_route_id=realtime_trip.route_id)
-            newtrip = Trip(
-                gtfs_trip_id=gtfs_trip_id,
-                active=True,
-                direction=0,
-                route=route,
-                added_from_realtime=True,
-                wheelchair_accessible=False,
-                bikes_allowed=False,
-            )
-            newtrip.save()
-            global_stats['missing_trips'] += 1
-            if DEBUG:
-                print(f'Added new trip: {newtrip}')
-            tripdate = TripDate(trip=newtrip, date=date, added_from_realtime=True)
-            tripdate.save()
-            global_stats['missing_tripdates'] += 1
-            return tripdate
-        except Route.DoesNotExist as e2:
-            global_stats['missing_routes'] += 1
-            if DEBUG:
-                print('Route did not exist')
-                print()
+            trip = Trip.objects.filter(gtfs_trip_id=gtfs_trip_id).order_by('-version').first()
+        except Trip.DoesNotExist as e:
+            trip = None
+        if trip is None:
+            trip = add_missing_trip(feed, realtime_trip)
+        if trip is None:
             return None
+    if DEBUG:
+        print(f'Found trip: {trip}')
+    try:
+        return TripDate.objects.get(trip=trip, date=date)
+    except TripDate.DoesNotExist as e:
+        pass
+    tripdate = TripDate(trip=trip, date=date, added_from_realtime=True)
+    tripdate.save()
+    global_stats['missing_tripdates'] += 1
+    return tripdate
+
+
+def add_missing_trip(feed, realtime_trip):
+    gtfs_trip_id = realtime_trip.trip_id
+    if DEBUG:
+        print(f'Trip with gtfs id {gtfs_trip_id} does not exist!!')
+    try:
+        route = Route.objects.get(feed=feed, gtfs_route_id=realtime_trip.route_id)
+    except Route.DoesNotExist as e2:
+        global_stats['missing_routes'] += 1
+        if DEBUG:
+            print('Route did not exist')
+            print()
+        return None
+    newtrip = Trip(
+        gtfs_trip_id=gtfs_trip_id,
+        active=True,
+        direction=0,
+        route=route,
+        added_from_realtime=True,
+        wheelchair_accessible=False,
+        bikes_allowed=False,
+    )
+    newtrip.save()
+    global_stats['missing_trips'] += 1
+    if DEBUG:
+        print(f'Added new trip: {newtrip}')
+    return newtrip
 
 
 def add_missing_trip_stop(trip, trip_update, stop_update, feed_tz, stops):
     stop_id = stop_update.stop_id
     stop = get_stop(trip.route.feed, stop_id, stops)
 
-    if TripStop.objects.filter(trip=trip, stop=stop, sequence=stop_update.stop_sequence).count() != 0:
-        return
-    arrival_time = datetime.fromtimestamp(stop_update.arrival.time, feed_tz)
-    arrival_time -= timedelta(seconds=stop_update.arrival.delay)
-    departure_time = datetime.fromtimestamp(stop_update.departure.time, feed_tz)
-    departure_time -= timedelta(seconds=stop_update.departure.delay)
-    newtripstop = TripStop(
-        trip=trip,
-        stop=stop,
-        sequence=stop_update.stop_sequence,
-        arrival_time=arrival_time.strftime('%H:%M:%S'),
-        departure_time=departure_time.strftime('%H:%M:%S'),
-        timepoint=False
-    )
-    newtripstop.save()
+    with transaction.atomic():
+        if TripStop.objects.filter(trip=trip, stop=stop, sequence=stop_update.stop_sequence).count() != 0:
+            return
+        arrival_time = datetime.fromtimestamp(stop_update.arrival.time, feed_tz)
+        arrival_time -= timedelta(seconds=stop_update.arrival.delay)
+        departure_time = datetime.fromtimestamp(stop_update.departure.time, feed_tz)
+        departure_time -= timedelta(seconds=stop_update.departure.delay)
+        newtripstop = TripStop(
+            trip=trip,
+            stop=stop,
+            sequence=stop_update.stop_sequence,
+            arrival_time=arrival_time.strftime('%H:%M:%S'),
+            departure_time=departure_time.strftime('%H:%M:%S'),
+            timepoint=False
+        )
+        newtripstop.save()
     global_stats['missing_tripstops'] += 1
 
 
 def get_stop(feed, stop_id, stops):
-    try:
-        stop = Stop.objects.get(feed=feed, gtfs_stop_id=stop_id)
-    except Stop.DoesNotExist:
-        stop = Stop(feed=feed, gtfs_stop_id=stop_id, name='Unknown', position=None)
-        stop.save()
-        stops[stop.gtfs_stop_id] = stop
-        global_stats['missing_stops'] += 1
+    with transaction.atomic():
+        try:
+            stop = Stop.objects.get(feed=feed, gtfs_stop_id=stop_id)
+        except Stop.DoesNotExist:
+            stop = Stop(feed=feed, gtfs_stop_id=stop_id, name='Unknown', position=None)
+            stop.save()
+            stops[stop.gtfs_stop_id] = stop
+            global_stats['missing_stops'] += 1
     return stop
 
 
