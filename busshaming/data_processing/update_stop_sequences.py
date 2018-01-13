@@ -41,3 +41,24 @@ def update_all_stop_sequences():
             for trip_stop in trip_stops:
                 this_sequence.append(trip_stop.stop_id)
             upsert_stop_sequence(trip, this_sequence)
+
+
+def verify_stop_sequences(route_id):
+    print('Checking stop sequences')
+    # For each Route, find all the trips and stops
+    ok = 0
+    for route in Route.objects.filter(id=route_id).all():
+        trips = route.trip_set.all()
+        for trip in trips:
+            this_sequence = []
+            trip_stops = TripStop.objects.filter(trip=trip).order_by('sequence')
+            prev = 0
+            for trip_stop in trip_stops:
+                if trip_stop.sequence != prev + 1:
+                    print('OH NOES!')
+                    print(trip)
+                    raise 'oh no'
+                prev += 1
+                this_sequence.append(trip_stop.stop_id)
+            ok += 1
+    print(f'{ok} were ok')
