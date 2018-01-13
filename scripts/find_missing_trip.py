@@ -25,6 +25,32 @@ def search_zip(gtfs_trip_id, zip_path):
                 return True
     return False
 
+def show_relevant_details(gtfs_trip_id, zip_path):
+    with zipfile.ZipFile(tmp_path) as zfile:
+        print('trips.txt')
+        csvreader = csv.DictReader(io.TextIOWrapper(zfile.open('trips.txt')))
+        for row in csvreader:
+            if gtfs_trip_id == row['trip_id']:
+                print(row)
+                service_id = row['service_id']
+        print('stop_times.txt')
+        csvreader = csv.DictReader(io.TextIOWrapper(zfile.open('stop_times.txt')))
+        for row in csvreader:
+            if gtfs_trip_id == row['trip_id']:
+                print(row)
+        print('calendar_dates.txt')
+        csvreader = csv.DictReader(io.TextIOWrapper(zfile.open('calendar_dates.txt')))
+        for row in csvreader:
+            if service_id == row['service_id']:
+                print(row)
+        print('calendar.txt')
+        csvreader = csv.DictReader(io.TextIOWrapper(zfile.open('calendar.txt')))
+        for row in csvreader:
+            if service_id == row['service_id']:
+                print(row)
+
+    return False
+
 
 def filename_from_date(date):
     datestr = date.strftime('%Y-%m-%dT%H:%M:%S.%f')
@@ -63,6 +89,7 @@ if __name__ == '__main__':
 
             found = search_zip(gtfs_trip_id, tmp_path)
             if found:
+                show_relevant_details(gtfs_trip_id, tmp_path)
                 break
 
         if found:
