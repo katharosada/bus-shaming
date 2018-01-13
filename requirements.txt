@@ -3,6 +3,7 @@ Django==1.11.4
 django-cors-headers==2.1.0
 djangorestframework==3.6.3
 dj-database-url==0.4.2
+drf-nested-routers==0.90.0
 gtfs-realtime-bindings==0.0.5
 gunicorn==19.6.0
 protobuf==3.3.0
