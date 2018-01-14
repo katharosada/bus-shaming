@@ -66,16 +66,16 @@ class StopSequenceAdmin(admin.ModelAdmin):
 
 @admin.register(Trip)
 class TripAdmin(admin.ModelAdmin):
-    list_display = ('gtfs_trip_id', 'trip_short_name', 'route')
-    list_filter = ('route__gtfs_route_id',)
+    list_display = ('gtfs_trip_id', 'trip_short_name', 'route', 'added_from_realtime', 'scheduled')
+    list_filter = ('added_from_realtime', 'scheduled')
     ordering = ('route__gtfs_route_id', 'gtfs_trip_id')
     search_fields = ('gtfs_trip_id', 'route__gtfs_route_id', 'route__short_name')
 
 
 @admin.register(TripDate)
 class TripDateAdmin(admin.ModelAdmin):
-    list_display = ('trip', 'date')
-    list_filter = ('date',)
+    list_display = ('trip', 'date', 'added_from_realtime')
+    list_filter = ('date', 'added_from_realtime')
     raw_id_fields = ('trip',)
     search_fields = ('trip__gtfs_trip_id',)
 
