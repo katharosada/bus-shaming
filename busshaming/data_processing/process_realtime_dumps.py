@@ -17,6 +17,9 @@ DEBUG = False
 global_stats = {}
 
 
+SCHEDULE_RELATIONSHIP = dict(gtfs_realtime_pb2.TripDescriptor.ScheduleRelationship.items())
+
+
 def add_missing_tripdate(feed, realtime_trip):
     gtfs_trip_id = realtime_trip.trip_id
     start_date = realtime_trip.start_date
@@ -41,22 +44,35 @@ def add_missing_tripdate(feed, realtime_trip):
         pass
     tripdate = TripDate(trip=trip, date=date, added_from_realtime=True)
     tripdate.save()
-    global_stats['missing_tripdates'] += 1
+    if trip.scheduled:
+        global_stats['missing_tripdates'] += 1
+    else:
+        global_stats['unscheduled_tripdates'] += 1
+    if not trip.added_from_realtime:
+        global_stats['missing_tripdates_but_trip_existed'] += 1
+        print(f'Trip {trip} was in the timetable, just not for tripdate {tripdate}')
     return tripdate
 
 
 def add_missing_trip(feed, realtime_trip):
     gtfs_trip_id = realtime_trip.trip_id
-    if DEBUG:
-        print(f'Trip with gtfs id {gtfs_trip_id} does not exist!!')
+    if realtime_trip.schedule_relationship == SCHEDULE_RELATIONSHIP['ADDED'] and '_' in gtfs_trip_id:
+        original_trip_id = gtfs_trip_id.split('_')[0]
+        trip = Trip.objects.filter(gtfs_trip_id=original_trip_id).order_by('-version').first()
+        if trip is not None:
+            global_stats['unscheduled_trips'] += 1
+            new_trip = trip.clone_to_unscheduled(gtfs_trip_id)
+            return new_trip
+    if not gtfs_trip_id:
+        global_stats['missing_trip_id'] += 1
+        gtfs_trip_id = 'unscheduled'
     try:
         route = Route.objects.get(feed=feed, gtfs_route_id=realtime_trip.route_id)
     except Route.DoesNotExist as e2:
         global_stats['missing_routes'] += 1
-        if DEBUG:
-            print('Route did not exist')
-            print()
+        print(f'Route did not exist: {realtime_trip.route_id}')
         return None
+    print(f'Trip with gtfs id {gtfs_trip_id} (from route {route}) does not exist!!')
     newtrip = Trip(
         gtfs_trip_id=gtfs_trip_id,
         active=True,
@@ -65,6 +81,7 @@ def add_missing_trip(feed, realtime_trip):
         added_from_realtime=True,
         wheelchair_accessible=False,
         bikes_allowed=False,
+        scheduled=(realtime_trip.schedule_relationship == SCHEDULE_RELATIONSHIP['SCHEDULED'])
     )
     newtrip.save()
     global_stats['missing_trips'] += 1
@@ -73,7 +90,14 @@ def add_missing_trip(feed, realtime_trip):
     return newtrip
 
 
-def add_missing_trip_stop(trip, trip_update, stop_update, feed_tz, stops):
+def format_stop_time(time, plus_24h):
+    hour = time.hour
+    if plus_24h:
+        hour += 24
+    return f'{hour:02d}:{time.minute:02d}:{time.second:02d}'
+
+
+def add_missing_trip_stop(trip, trip_update, stop_update, feed_tz, stops, plus_24h):
     stop_id = stop_update.stop_id
     stop = get_stop(trip.route.feed, stop_id, stops)
 
@@ -88,8 +112,8 @@ def add_missing_trip_stop(trip, trip_update, stop_update, feed_tz, stops):
             trip=trip,
             stop=stop,
             sequence=stop_update.stop_sequence,
-            arrival_time=arrival_time.strftime('%H:%M:%S'),
-            departure_time=departure_time.strftime('%H:%M:%S'),
+            arrival_time=format_stop_time(arrival_time, plus_24h),
+            departure_time=format_stop_time(departure_time, plus_24h),
             timepoint=False
         )
         newtripstop.save()
@@ -108,12 +132,19 @@ def get_stop(feed, stop_id, stops):
     return stop
 
 
-def process_trip_update(feed, trip_dates, stops, feed_tz, trip_update, threshold, start_date_str):
+def process_trip_update(feed, trip_dates, stops, feed_tz, trip_update, threshold, start_date_str, start_date_str_after_midnight):
     global_stats['trip_updates_found'] += 1
     trip = trip_update.trip
+    plus_24h = False
+    if trip.start_time < '04:00:00':
+        if trip.start_date == start_date_str_after_midnight:
+            trip.start_date = start_date_str
+            plus_24h = True
+        else:
+            return
     if trip.start_date != start_date_str:
         return
-    key = (trip.trip_id, trip.start_date)
+    key = (trip.trip_id, start_date_str)
     if key not in trip_dates:
         trip_date = add_missing_tripdate(feed, trip)
         if trip_date is not None:
@@ -129,8 +160,8 @@ def process_trip_update(feed, trip_dates, stops, feed_tz, trip_update, threshold
     for stop_update in trip_update.stop_time_update:
         global_stats['stop_updates_found'] += 1
         if stop_update.arrival.time < threshold:
-            if trip_date.trip.added_from_realtime:
-                add_missing_trip_stop(trip_date.trip, trip_update, stop_update, feed_tz, stops)
+            if trip_date.trip.added_from_realtime and trip_date.trip.gtfs_trip_id != 'unscheduled':
+                add_missing_trip_stop(trip_date.trip, trip_update, stop_update, feed_tz, stops, plus_24h)
             if stop_update.stop_id in stops:
                 stop = stops[stop_update.stop_id]
             else:
@@ -142,16 +173,20 @@ def process_trip_update(feed, trip_dates, stops, feed_tz, trip_update, threshold
             global_stats['stop_updates_stored'] += 1
 
 
-def process_dump_contents(feed, contents, trip_dates, stops, fetchtime, feed_tz, start_date_str):
+def process_dump_contents(feed, contents, trip_dates, stops, fetchtime, feed_tz, start_date_str, start_date_str_after_midnight):
     global global_stats
     global_stats = {
         'trip_updates_found': 0,
         'stop_updates_found': 0,
         'stop_updates_stored': 0,
         'missing_trips': 0,
+        'unscheduled_trips': 0,
+        'unscheduled_tripdates': 0,
         'missing_stops': 0,
+        'missing_trip_id': 0,
         'missing_tripstops': 0,
         'missing_tripdates': 0,
+        'missing_tripdates_but_trip_existed': 0,
         'missing_routes': 0,
     }
     feed_message = gtfs_realtime_pb2.FeedMessage()
@@ -159,7 +194,7 @@ def process_dump_contents(feed, contents, trip_dates, stops, fetchtime, feed_tz,
     threshold = int((fetchtime + timedelta(minutes=5)).timestamp())
     for entity in feed_message.entity:
         if entity.HasField('trip_update'):
-            process_trip_update(feed, trip_dates, stops, feed_tz, entity.trip_update, threshold, start_date_str)
+            process_trip_update(feed, trip_dates, stops, feed_tz, entity.trip_update, threshold, start_date_str, start_date_str_after_midnight)
     for stat in global_stats:
         print(f'{stat}: {global_stats[stat]}')
 
@@ -202,6 +237,7 @@ def process_next(realtime_progress, num_dumps):
             cached_dumps = fetch_next_dumps(realtime_progress, num_dumps, temp_dir)
             feed_tz = pytz.timezone(feed.timezone)
             start_date_str = realtime_progress.start_date.strftime('%Y%m%d')
+            start_date_str_after_midnight = (realtime_progress.start_date + timedelta(days=1)).strftime('%Y%m%d')
 
             if len(cached_dumps) != 0:
                 # Prefetch stops
@@ -230,7 +266,7 @@ def process_next(realtime_progress, num_dumps):
                     with open(tmp_file, 'rb') as f:
                         contents = f.read()
                         print(f'Processing {key}')
-                        process_dump_contents(feed, contents, trip_dates, stops, fetchtime, feed_tz, start_date_str)
+                        process_dump_contents(feed, contents, trip_dates, stops, fetchtime, feed_tz, start_date_str, start_date_str_after_midnight)
                     # Update where we're up to.
                     if fetchtime > realtime_progress.end_time():
                         realtime_progress.update_progress(key, True)
