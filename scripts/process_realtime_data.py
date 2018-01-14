@@ -1,6 +1,7 @@
 import django
+import time
 import cProfile
-from datetime import timedelta, timezone
+from datetime import timedelta
 
 django.setup()
 
@@ -45,5 +46,7 @@ def find_available_work(feed_slug):
 if __name__ == '__main__':
     #cProfile.run('process_realtime_dumps.process_next(10)', filename='output.txt')
 
-    progress = find_available_work('nsw-buses')
-    process_realtime_dumps.process_next(progress, 30)
+    while True:
+        progress = find_available_work('nsw-buses')
+        process_realtime_dumps.process_next(progress, 15)
+        time.sleep(2)
