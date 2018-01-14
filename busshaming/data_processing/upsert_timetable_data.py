@@ -62,9 +62,9 @@ def process_routes(feed, csvreader, fetchtime):
             route.save()
 
 
-def process_trip_dates(csvreader, fetchtime):
+def process_trip_dates(csvreader, csvreader_calendar_dates, fetchtime):
     print('Processing trip dates')
-    result = defaultdict(list)
+    result = defaultdict(set)
     limit = fetchtime.date() + timedelta(days=14)
     today = fetchtime.date()
     for row in csvreader:
@@ -80,8 +80,17 @@ def process_trip_dates(csvreader, fetchtime):
         while cur_date <= end_date and cur_date < limit:
             if cur_date.weekday() in days:
                 # Add to set of days.
-                result[row['service_id']].append(cur_date)
+                result[row['service_id']].add(cur_date)
             cur_date += timedelta(days=1)
+    for row in csvreader_calendar_dates:
+        exception_date = datetime.strptime(row['date'], '%Y%m%d').date()
+        if exception_date <= limit and exception_date >= today:
+            if row['exception_type'] == '1':
+                result[row['service_id']].add(exception_date)
+            elif row['exception_type'] == '2':
+                if exception_date in result[row['service_id']]:
+                    result[row['service_id']].remove(exception_date)
+
     return result
 
 
@@ -246,7 +255,10 @@ def process_zip(feed, zfile, fetchtime):
     process_agencies(feed, csv.DictReader(io.TextIOWrapper(zfile.open('agency.txt'))))
     process_routes(feed, csv.DictReader(io.TextIOWrapper(zfile.open('routes.txt'))), fetchtime)
     process_stops(feed, csv.DictReader(io.TextIOWrapper(zfile.open('stops.txt'))))
-    trip_dates = process_trip_dates(csv.DictReader(io.TextIOWrapper(zfile.open('calendar.txt'))), fetchtime)
+    trip_dates = process_trip_dates(
+            csv.DictReader(io.TextIOWrapper(zfile.open('calendar.txt'))),
+            csv.DictReader(io.TextIOWrapper(zfile.open('calendar_dates.txt'))),
+            fetchtime)
     trip_stops = process_stop_times(feed, csv.DictReader(io.TextIOWrapper(zfile.open('stop_times.txt'))))
     process_trips(feed, trip_dates, trip_stops, csv.DictReader(io.TextIOWrapper(zfile.open('trips.txt'))), fetchtime)
     return True
