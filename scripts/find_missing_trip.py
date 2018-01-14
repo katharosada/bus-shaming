@@ -3,6 +3,7 @@ import os
 import io
 import sys
 import csv
+import tempfile
 import zipfile
 
 import django
@@ -77,20 +78,21 @@ if __name__ == '__main__':
     for timetable_feed in timetable_feeds:
         filename = filename_from_date(timetable_feed.id, date - timedelta(days=14))
 
-        while filename == '' or date_from_filename(filename) <= date:
-            timetable_feed.last_processed_zip = filename
-            print(filename)
-            tmp_path, obj_key = process_timetable_data.download_zip(timetable_feed)
-            if tmp_path is None:
-                break
+        with tempfile.TemporaryDirectory() as temp_dir:
+            while filename == '' or date_from_filename(filename) <= date:
+                timetable_feed.last_processed_zip = filename
+                print(filename)
+                tmp_path, obj_key = process_timetable_data.download_zip(timetable_feed, temp_dir)
+                if tmp_path is None:
+                    break
 
-            filename = obj_key
-            print(obj_key)
+                filename = obj_key
+                print(obj_key)
 
-            found = search_zip(gtfs_trip_id, tmp_path)
-            if found:
-                show_relevant_details(gtfs_trip_id, tmp_path)
-                break
+                found = search_zip(gtfs_trip_id, tmp_path)
+                if found:
+                    show_relevant_details(gtfs_trip_id, tmp_path)
+                    break
 
         if found:
             break
