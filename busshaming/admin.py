@@ -24,12 +24,13 @@ class AgencyAdmin(admin.ModelAdmin):
 
 @admin.register(Feed)
 class FeedAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'slug', 'name', 'realtime_feed_url', 'active')
 
 
 @admin.register(FeedTimetable)
 class FeedTimetableAdmin(admin.ModelAdmin):
-    pass
+    list_display = ('id', 'feed', 'timetable_url', 'fetch_last_modified', 'last_processed_zip')
+    ordering = ('id',)
 
 
 @admin.register(RealtimeEntry)
