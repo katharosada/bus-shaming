@@ -252,8 +252,6 @@ def process_next(realtime_progress, num_dumps):
                 fetchtime = datetime.strptime(datestr, '%Y-%m-%dT%H:%M:%S.%f').replace(tzinfo=timezone.utc)
                 # Assume no bus runs longer than 48h
                 fetchtime = fetchtime.astimezone(feed_tz)
-                start = (fetchtime - timedelta(days=2)).date()
-                end = (fetchtime + timedelta(days=2, minutes=len(cached_dumps))).date()
                 for trip_date in TripDate.objects.filter(date=realtime_progress.start_date).prefetch_related('trip'):
                     datestr = trip_date.date.strftime('%Y%m%d')
                     trip_dates[(trip_date.trip.gtfs_trip_id, datestr)] = trip_date
