@@ -52,9 +52,9 @@ def show_relevant_details(gtfs_trip_id, zip_path):
     return False
 
 
-def filename_from_date(date):
+def filename_from_date(id, date):
     datestr = date.strftime('%Y-%m-%dT%H:%M:%S.%f')
-    return f'nsw-buses/{datestr}.zip'
+    return f'nsw-buses/{id}/{datestr}.zip'
 
 
 def date_from_filename(filename):
@@ -75,11 +75,11 @@ if __name__ == '__main__':
     timetable_feeds = FeedTimetable.objects.filter(feed=feed).order_by('id').prefetch_related('feed')
     found = False
     for timetable_feed in timetable_feeds:
-        filename = filename_from_date(date - timedelta(days=14))
-        filename = ''
+        filename = filename_from_date(timetable_feed.id, date - timedelta(days=14))
 
         while filename == '' or date_from_filename(filename) <= date:
             timetable_feed.last_processed_zip = filename
+            print(filename)
             tmp_path, obj_key = process_timetable_data.download_zip(timetable_feed)
             if tmp_path is None:
                 break
