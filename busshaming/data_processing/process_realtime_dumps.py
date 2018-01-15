@@ -27,9 +27,12 @@ def add_missing_tripdate(feed, realtime_trip):
         print(f'Adding missing trip date for gtfs id {gtfs_trip_id} on date {start_date}')
     date = datetime.strptime(start_date, '%Y%m%d').date()
 
+    if not realtime_trip.route_id:
+        return None
+
     with transaction.atomic():
         try:
-            trip = Trip.objects.filter(gtfs_trip_id=gtfs_trip_id).order_by('-version').first()
+            trip = Trip.objects.filter(gtfs_trip_id=gtfs_trip_id, route__gtfs_route_id=realtime_trip.route_id).order_by('-version').first()
         except Trip.DoesNotExist as e:
             trip = None
         if trip is None:
@@ -63,9 +66,6 @@ def add_missing_trip(feed, realtime_trip):
             global_stats['unscheduled_trips'] += 1
             new_trip = trip.clone_to_unscheduled(gtfs_trip_id)
             return new_trip
-    if not gtfs_trip_id:
-        global_stats['missing_trip_id'] += 1
-        gtfs_trip_id = 'unscheduled'
     try:
         route = Route.objects.get(feed=feed, gtfs_route_id=realtime_trip.route_id)
     except Route.DoesNotExist as e2:
@@ -144,6 +144,13 @@ def process_trip_update(feed, trip_dates, stops, feed_tz, trip_update, threshold
             return
     if trip.start_date != start_date_str:
         return
+    # Some trips are missing ids altogether.
+    # Construct an id from 'unscheduled' and the vehicle id
+    if not trip.trip_id:
+        if not trip_update.vehicle.id:
+            return
+        global_stats['missing_trip_id'] += 1
+        trip.trip_id = 'unscheduled_' + trip_update.vehicle.id
     key = (trip.trip_id, start_date_str)
     if key not in trip_dates:
         trip_date = add_missing_tripdate(feed, trip)
