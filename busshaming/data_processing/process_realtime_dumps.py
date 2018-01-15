@@ -1,5 +1,5 @@
 import os
-from datetime import datetime, timedelta, timezone, time
+from datetime import datetime, timedelta, timezone
 import tempfile
 
 from django.db import transaction
@@ -8,7 +8,7 @@ import boto3
 import pytz
 from google.transit import gtfs_realtime_pb2
 
-from busshaming.models import Feed, Trip, TripDate, TripStop, RealtimeEntry, Route, Stop
+from busshaming.models import Trip, TripDate, TripStop, RealtimeEntry, Route, Stop
 
 S3_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME', 'busshaming-realtime-dumps')
 
@@ -18,6 +18,10 @@ global_stats = {}
 
 
 SCHEDULE_RELATIONSHIP = dict(gtfs_realtime_pb2.TripDescriptor.ScheduleRelationship.items())
+
+ROUTE_ID_SET = set()
+
+upsert_log = {}
 
 
 def add_missing_tripdate(feed, realtime_trip):
@@ -59,6 +63,8 @@ def add_missing_tripdate(feed, realtime_trip):
 
 def add_missing_trip(feed, realtime_trip):
     gtfs_trip_id = realtime_trip.trip_id
+    if realtime_trip.route_id not in ROUTE_ID_SET:
+        return None
     if realtime_trip.schedule_relationship == SCHEDULE_RELATIONSHIP['ADDED'] and '_' in gtfs_trip_id:
         original_trip_id = gtfs_trip_id.split('_')[0]
         trip = Trip.objects.filter(gtfs_trip_id=original_trip_id).order_by('-version').first()
@@ -176,7 +182,8 @@ def process_trip_update(feed, trip_dates, stops, feed_tz, trip_update, threshold
             arrival_time = datetime.fromtimestamp(stop_update.arrival.time, feed_tz)
             departure_time = datetime.fromtimestamp(stop_update.departure.time, feed_tz)
             # Upsert RealtimeEntry
-            RealtimeEntry.objects.upsert(trip_date.id, stop.id, stop_update.stop_sequence, arrival_time, stop_update.arrival.delay, departure_time, stop_update.departure.delay)
+            # RealtimeEntry.objects.upsert(trip_date.id, stop.id, stop_update.stop_sequence, arrival_time, stop_update.arrival.delay, departure_time, stop_update.departure.delay)
+            upsert_log[(trip_date.id, stop.id)] = (stop_update.stop_sequence, arrival_time, stop_update.arrival.delay, departure_time, stop_update.departure.delay)
             global_stats['stop_updates_stored'] += 1
 
 
@@ -236,9 +243,25 @@ def fetch_next_dumps(realtime_progress, num_dumps, temp_dir):
     return results
 
 
+def refresh_route_list():
+    global ROUTE_LIST
+    ROUTE_ID_SET = set(Route.objects.values_list('gtfs_route_id', flat=True))
+
+def clear_upsert_log():
+    global upsert_log
+    upsert_log = {}
+
+def write_upsert_log():
+    global upsert_log
+    for realtime_key, value in upsert_log.items():
+        #RealtimeEntry.objects.upsert(trip_date.id, stop.id, stop_update.stop_sequence, arrival_time, stop_update.arrival.delay, departure_time, stop_update.departure.delay)
+        RealtimeEntry.objects.upsert(*realtime_key, *value)
+
+
 def process_next(realtime_progress, num_dumps):
     feed = realtime_progress.feed
     succeed = realtime_progress.take_processing_lock()
+    clear_upsert_log()
     if not succeed:
         # It'll try again with another progress
         return
@@ -254,6 +277,9 @@ def process_next(realtime_progress, num_dumps):
                 stops = {}
                 for stop in Stop.objects.filter(feed=feed):
                     stops[stop.gtfs_stop_id] = stop
+
+                # Prefetch Routes
+                refresh_route_list()
 
                 # Prefetch Trip Dates
                 first_key = cached_dumps[0][0]
@@ -275,11 +301,13 @@ def process_next(realtime_progress, num_dumps):
                         contents = f.read()
                         print(f'Processing {key}')
                         process_dump_contents(feed, contents, trip_dates, stops, fetchtime, feed_tz, start_date_str, start_date_str_after_midnight)
-                    # Update where we're up to.
                     if fetchtime > realtime_progress.end_time():
-                        realtime_progress.update_progress(key, True)
                         break
-                    else:
-                        realtime_progress.update_progress(key, False)
+        # Update where we're up to.
+        write_upsert_log()
+        if fetchtime > realtime_progress.end_time():
+            realtime_progress.update_progress(key, True)
+        else:
+            realtime_progress.update_progress(key, False)
     finally:
         realtime_progress.release_processing_lock()
