@@ -238,7 +238,10 @@ def fetch_next_dumps(realtime_progress, num_dumps, temp_dir):
 
 def process_next(realtime_progress, num_dumps):
     feed = realtime_progress.feed
-    realtime_progress.take_processing_lock()
+    succeed = realtime_progress.take_processing_lock()
+    if not succeed:
+        # It'll try again with another progress
+        return
     try:
         with tempfile.TemporaryDirectory() as temp_dir:
             cached_dumps = fetch_next_dumps(realtime_progress, num_dumps, temp_dir)
