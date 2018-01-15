@@ -14,6 +14,9 @@ class RealtimeProgress(models.Model):
     last_processed_dump = models.CharField(max_length=50, blank=True, null=True)
     completed = models.BooleanField(default=False)
 
+    class Meta:
+        unique_together = (('feed', 'start_date'),)
+
     def take_processing_lock(self):
         with transaction.atomic():
             self.refresh_from_db()
