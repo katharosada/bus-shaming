@@ -51,13 +51,15 @@ def backfill_timepoints(stops, tmp_path):
 
         timepoint_stops = [s['stop'].id for s in stop_set if s['timepoint']]
         timepoint_sequences = [s['sequence'] for s in stop_set if s['timepoint']]
-        tripstops = TripStop.objects.filter(trip_id__in=relevant_trip_ids, stop_id__in=timepoint_stops, sequence__in=timepoint_sequences).update(timepoint=True)
-        StopSequence.objects.filter(sequence_hash=sequence_hash, route_id=route_id).update(has_timepoints=True)
+        tripstops_query = TripStop.objects.filter(trip_id__in=relevant_trip_ids, stop_id__in=timepoint_stops, sequence__in=timepoint_sequences)
+        tripstops = tripstops_query.count()
         if not (len(timepoint_stops) * len(relevant_trip_ids) == tripstops):
             print(f'{gtfs_trip_id}: {len(timepoint_stops)} timepoints out of {len(stop_set)}')
             print(f'{route_id}')
-            print(f'assert {len(timepoint_stops)} * {len(relevant_trip_ids)} == {len(tripstops)}')
+            print(f'assert {len(timepoint_stops)} * {len(relevant_trip_ids)} == {tripstops}')
             return False
+        tripstops = tripstops_query.update(timepoint=True)
+        StopSequence.objects.filter(sequence_hash=sequence_hash, route_id=route_id).update(has_timepoints=True)
         gtfs_ids.difference_update(relevant_gtfs_trip_ids)
     return True
 
