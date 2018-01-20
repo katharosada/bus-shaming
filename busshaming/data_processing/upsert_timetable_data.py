@@ -211,7 +211,7 @@ def process_stop_times(feed, csvreader):
             'sequence': int(row['stop_sequence']),
             'arrival_time': row['arrival_time'],
             'departure_time': row['departure_time'],
-            'timepoint': row['timepoint'] == 1
+            'timepoint': row['timepoint'] == '1'
         }
         stop_sets[gtfs_trip_id].append(new_stop)
 
@@ -241,6 +241,9 @@ def process_stop_times(feed, csvreader):
                         mismatch = True
                     elif new_stop['departure_time'] != existing_stop.departure_time:
                         print(f'MISMATCH departure time {gtfs_trip_id}')
+                        mismatch = True
+                    elif new_stop['timepoint'] != existing_stop.timepoint:
+                        print(f'MISMATCH timepoint {gtfs_trip_id}')
                         mismatch = True
                 if mismatch:
                     print('Intending to create new trip version for {gtfs_trip_id}')
