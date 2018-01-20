@@ -103,29 +103,6 @@ def format_stop_time(time, plus_24h):
     return f'{hour:02d}:{time.minute:02d}:{time.second:02d}'
 
 
-def add_missing_trip_stop(trip, trip_update, stop_update, feed_tz, stops, plus_24h):
-    stop_id = stop_update.stop_id
-    stop = get_stop(trip.route.feed, stop_id, stops)
-
-    with transaction.atomic():
-        if TripStop.objects.filter(trip=trip, stop=stop, sequence=stop_update.stop_sequence).count() != 0:
-            return
-        arrival_time = datetime.fromtimestamp(stop_update.arrival.time, feed_tz)
-        arrival_time -= timedelta(seconds=stop_update.arrival.delay)
-        departure_time = datetime.fromtimestamp(stop_update.departure.time, feed_tz)
-        departure_time -= timedelta(seconds=stop_update.departure.delay)
-        newtripstop = TripStop(
-            trip=trip,
-            stop=stop,
-            sequence=stop_update.stop_sequence,
-            arrival_time=format_stop_time(arrival_time, plus_24h),
-            departure_time=format_stop_time(departure_time, plus_24h),
-            timepoint=False
-        )
-        newtripstop.save()
-    global_stats['missing_tripstops'] += 1
-
-
 def get_stop(feed, stop_id, stops):
     with transaction.atomic():
         try:
@@ -173,8 +150,6 @@ def process_trip_update(feed, trip_dates, stops, feed_tz, trip_update, threshold
     for stop_update in trip_update.stop_time_update:
         global_stats['stop_updates_found'] += 1
         if stop_update.arrival.time < threshold:
-            if trip_date.trip.added_from_realtime and trip_date.trip.gtfs_trip_id != 'unscheduled':
-                add_missing_trip_stop(trip_date.trip, trip_update, stop_update, feed_tz, stops, plus_24h)
             if stop_update.stop_id in stops:
                 stop = stops[stop_update.stop_id]
             else:
@@ -198,7 +173,6 @@ def process_dump_contents(feed, contents, trip_dates, stops, fetchtime, feed_tz,
         'unscheduled_tripdates': 0,
         'missing_stops': 0,
         'missing_trip_id': 0,
-        'missing_tripstops': 0,
         'missing_tripdates': 0,
         'missing_tripdates_but_trip_existed': 0,
         'missing_routes': 0,
