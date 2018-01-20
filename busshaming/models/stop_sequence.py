@@ -11,6 +11,8 @@ class StopSequence(models.Model):
     trip_short_name = models.CharField(max_length=200, blank=True, null=True)
     direction = models.SmallIntegerField()
     created_at = models.DateTimeField(auto_now_add=True)
+    # Temporarily adding this to track the timepoint backfill.
+    has_timepoints = models.BooleanField(default=True)
 
     class Meta:
         unique_together = ('sequence_hash', 'route')
