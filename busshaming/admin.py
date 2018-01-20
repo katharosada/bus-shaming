@@ -35,7 +35,7 @@ class FeedTimetableAdmin(admin.ModelAdmin):
 
 @admin.register(RealtimeProgress)
 class RealtimeProgressAdmin(admin.ModelAdmin):
-    list_display = ('feed', 'start_date', 'last_processed_dump', 'in_progress', 'completed')
+    list_display = ('feed', 'start_date', 'last_processed_dump', 'in_progress', 'completed', 'stats_completed')
     ordering = ('start_date',)
 
 
