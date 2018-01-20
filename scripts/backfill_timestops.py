@@ -110,7 +110,7 @@ def main(date):
             tmp_path, obj_key = process_timetable_data.download_zip(timetable_feed, temp_dir)
             if tmp_path is None:
                 del feed_dates[timetable_feed_id]
-                break
+                continue
             print(f'Processing {obj_key}')
             success = backfill_timepoints(stops, tmp_path)
             if not success:
