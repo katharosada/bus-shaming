@@ -13,6 +13,7 @@ class RealtimeProgress(models.Model):
     in_progress = models.DateTimeField(blank=True, null=True)
     last_processed_dump = models.CharField(max_length=50, blank=True, null=True)
     completed = models.BooleanField(default=False)
+    stats_completed = models.BooleanField(default=False)
 
     class Meta:
         unique_together = (('feed', 'start_date'),)
@@ -34,6 +35,13 @@ class RealtimeProgress(models.Model):
             assert self.in_progress is not None
             self.last_processed_dump = last_processed_dump
             self.completed = completed
+            self.save()
+
+    def set_stats_completed(self):
+        with transaction.atomic():
+            self.refresh_from_db()
+            assert self.in_progress is not None
+            self.stats_completed = True
             self.save()
 
     def release_processing_lock(self):
