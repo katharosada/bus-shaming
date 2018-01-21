@@ -1,9 +1,10 @@
 from datetime import timedelta
-from statistics import median
+from statistics import mean, median
+from collections import defaultdict
 
 import pytz
 
-from busshaming.models import TripDate, TripStop, RealtimeEntry
+from busshaming.models import TripDate, TripStop, RealtimeEntry, RouteDate
 
 AU_TIMEZONE = pytz.timezone('Australia/Sydney')
 
@@ -232,6 +233,68 @@ def get_matching_realtime(realtime_entries, trip_stop):
     return None
 
 
+def calculate_route_date_stats(date):
+    trip_dates_by_route = defaultdict(list)
+    for tripdate in TripDate.objects.filter(date=date).prefetch_related('trip').all():
+        trip_dates_by_route[tripdate.trip.route_id].append(tripdate)
+
+    for route_id in trip_dates_by_route:
+        trip_dates = trip_dates_by_route[route_id]
+
+        try:
+            route_date = RouteDate.objects.get(route_id=route_id, date=date)
+        except RouteDate.DoesNotExist:
+            route_date = RouteDate(route_id=route_id, date=date)
+
+        route_date.num_trips = len(trip_dates)
+        route_date.num_scheduled_stops = 0
+        route_date.num_realtime_stops = 0
+        route_date.early_count = 0
+        route_date.ontime_count = 0
+        route_date.late_count = 0
+        route_date.verylate_count = 0
+        route_date.count_has_start_middle_end_stats = 0
+        route_date.sum_start_delay = 0
+        route_date.sum_middle_delay = 0
+        route_date.sum_end_delay = 0
+        route_date.num_delay_stops = 0
+        route_date.sum_delay = 0
+        route_date.sum_delay_squared = 0
+
+        for tripdate in trip_dates:
+            route_date.num_scheduled_stops += tripdate.num_scheduled_stops
+            route_date.num_realtime_stops += tripdate.num_realtime_stops
+
+            if tripdate.num_realtime_stops > 0:
+                route_date.early_count += tripdate.early_count
+                route_date.ontime_count += tripdate.ontime_count
+                route_date.late_count += tripdate.late_count
+                route_date.verylate_count += tripdate.verylate_count
+                route_date.num_delay_stops += tripdate.num_delay_stops
+                route_date.sum_delay += tripdate.sum_delay
+                route_date.sum_delay_squared += tripdate.sum_delay_squared
+
+            if tripdate.has_start_middle_end_stats:
+                route_date.count_has_start_middle_end_stats += 1
+                route_date.sum_start_delay += tripdate.start_delay
+                route_date.sum_middle_delay += tripdate.middle_delay
+                route_date.sum_end_delay += tripdate.end_delay
+
+        if route_date.num_delay_stops > 0:
+            route_date.max_delay = max(td.max_delay for td in trip_dates if td.max_delay is not None)
+            route_date.min_delay = min(td.min_delay for td in trip_dates if td.min_delay is not None)
+
+        if route_date.num_scheduled_stops > 0:
+            route_date.realtime_coverage = mean(td.realtime_coverage for td in trip_dates if td.realtime_coverage is not None)
+            accuracies = [td.realtime_accuracy for td in trip_dates if td.realtime_accuracy is not None]
+            if len(accuracies) > 0:
+                route_date.realtime_accuracy = mean(accuracies)
+            else:
+                route_date.realtime_accuracy = None
+
+        route_date.save()
+
+
 def calculate_stats_for_day(date):
     global meta_stats
     meta_stats = {
@@ -257,3 +320,4 @@ def calculate_stats_for_day(date):
         meta_stats['trip_dates_processed'] += 1
     for stat in meta_stats:
         print(f'{stat}: {meta_stats[stat]}')
+    calculate_route_date_stats(date)
