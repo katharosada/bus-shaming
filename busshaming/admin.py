@@ -7,6 +7,7 @@ from .models import (
     RealtimeEntry,
     RealtimeProgress,
     Route,
+    RouteDate,
     Stop,
     StopSequence,
     Trip,
@@ -44,6 +45,13 @@ class RouteAdmin(admin.ModelAdmin):
     list_display = ('gtfs_route_id', 'short_name', 'long_name')
     ordering = ('gtfs_route_id',)
     search_fields = ('gtfs_route_id', 'short_name', 'long_name')
+
+
+@admin.register(RouteDate)
+class RouteDateAdmin(admin.ModelAdmin):
+    list_display = ('id', 'route', 'date', 'realtime_coverage', 'delay_average', 'delay_std_dev', 'start_delay_average', 'middle_delay_average', 'end_delay_average')
+    ordering = ('date',)
+    search_fields = ('route__short_name',)
 
 
 @admin.register(Stop)
