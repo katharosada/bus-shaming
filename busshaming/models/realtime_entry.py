@@ -37,4 +37,4 @@ class RealtimeEntry(models.Model):
         unique_together = ('trip_date', 'stop')
 
     def __str__(self):
-        return f'Realtime entry ({self.trip_date_id} {self.stop_id})'
+        return f'{self.id} (stop {self.sequence} at stop id {self.stop_id})'

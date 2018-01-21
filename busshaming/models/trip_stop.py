@@ -13,7 +13,7 @@ class TripStop(models.Model):
         unique_together = ('trip', 'stop', 'sequence')
 
     def __str__(self):
-        return f'Trip {self.trip.gtfs_trip_id} stop {self.sequence} ({self.stop.name})'
+        return f'Trip {self.trip.gtfs_trip_id} stop {self.sequence} ({self.stop_id})'
 
     def clone_to_new_trip(self, new_trip):
         new_tripstop = TripStop(
