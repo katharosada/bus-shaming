@@ -1,4 +1,5 @@
 from datetime import timedelta
+from statistics import median
 
 import pytz
 
@@ -180,18 +181,32 @@ def calculate_tripdate_stats(trip_date):
             trip_date.has_start_middle_end_stats = True
             meta_stats['has_start_middle_end'] += 1
 
-    max_delay = 0
+    delays = []
     total_delay = 0
     total_delay_squared = 0
     for rt in realtime_entries:
         delay = max(rt.arrival_delay, rt.departure_delay)
-        if delay > max_delay:
-            max_delay = delay
+        delays.append(delay)
         total_delay += delay
         total_delay_squared += delay * delay
 
+    delays.sort()
+    trip_date.max_delay = delays[-1]
+    trip_date.min_delay = delays[0]
+    trip_date.median_delay = median(delays)
+    if len(delays) >= 2:
+        trip_date.lower_quartile_delay = median(delays[:len(delays)//2])
+        trip_date.upper_quartile_delay = median(delays[len(delays)//2:])
+    else:
+        trip_date.lower_quartile_delay = trip_date.median_delay
+        trip_date.upper_quartile_delay = trip_date.median_delay
+
+    trip_date.early_count = sum(delay < -2 * 60 for delay in delays)
+    trip_date.ontime_count = sum(-2 * 60 <= delay <= 5 * 60 for delay in delays)
+    trip_date.late_count = sum(5 * 60 < delay <= 20 * 60 for delay in delays)
+    trip_date.verylate_count = sum(delay > 20 * 60 for delay in delays)
+
     trip_date.num_delay_stops = len(realtime_entries)
-    trip_date.max_delay = max_delay
     trip_date.avg_delay = total_delay / len(realtime_entries)
     trip_date.variance_delay = variance(len(realtime_entries), total_delay, total_delay_squared)
     trip_date.sum_delay = total_delay

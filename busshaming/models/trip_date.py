@@ -22,15 +22,25 @@ class TripDate(models.Model):
     realtime_coverage = models.FloatField(null=True, blank=True)
     realtime_accuracy = models.FloatField(null=True, blank=True)
 
+    early_count = models.SmallIntegerField(null=True, blank=True)
+    ontime_count = models.SmallIntegerField(null=True, blank=True)
+    late_count = models.SmallIntegerField(null=True, blank=True)
+    verylate_count = models.SmallIntegerField(null=True, blank=True)
+
     has_start_middle_end_stats = models.BooleanField(default=False)
     start_delay = models.SmallIntegerField(null=True, blank=True)
     middle_delay = models.SmallIntegerField(null=True, blank=True)
     end_delay = models.SmallIntegerField(null=True, blank=True)
 
     num_delay_stops = models.PositiveSmallIntegerField(null=True, blank=True)
-    max_delay = models.SmallIntegerField(null=True, blank=True)
     avg_delay = models.SmallIntegerField(null=True, blank=True)
     variance_delay = models.IntegerField(null=True, blank=True)
+
+    max_delay = models.SmallIntegerField(null=True, blank=True)
+    upper_quartile_delay = models.SmallIntegerField(null=True, blank=True)
+    median_delay = models.SmallIntegerField(null=True, blank=True)
+    lower_quartile_delay = models.SmallIntegerField(null=True, blank=True)
+    min_delay = models.SmallIntegerField(null=True, blank=True)
 
     sum_delay = models.IntegerField(null=True, blank=True)
     sum_delay_squared = models.IntegerField(null=True, blank=True)
