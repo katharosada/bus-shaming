@@ -275,7 +275,7 @@ def calculate_route_date_stats(date):
                 route_date.sum_delay += tripdate.sum_delay
                 route_date.sum_delay_squared += tripdate.sum_delay_squared
 
-            if tripdate.hamiddle_end_stats:
+            if tripdate.has_start_middle_end_stats:
                 route_date.count_has_start_middle_end_stats += 1
                 route_date.sum_start_delay += tripdate.start_delay
                 route_date.sum_middle_delay += tripdate.middle_delay
