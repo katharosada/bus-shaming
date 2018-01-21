@@ -164,23 +164,24 @@ def calculate_tripdate_stats(trip_date):
             meta_stats['perfect_match'] += 1
 
     trip_date.has_start_middle_end_stats = False
-    middle_sequence = trip_stops[len(trip_stops)//2].sequence
-    # start, middle, end delay (using timing stops)
-    timing_stops = [ts for ts in trip_stops if ts.timepoint]
-    if len(timing_stops) == 0:
-        meta_stats['no_timepoints'] += 1
-    elif len(timing_stops) < 3:
-        meta_stats['not_enough_timepoints'] += 1
-    else:
-        start_rt = get_matching_realtime(realtime_entries, timing_stops[0])
-        middle_rt = get_matching_realtime(realtime_entries, min(timing_stops, key=lambda ts: abs(ts.sequence - middle_sequence)))
-        end_rt = get_matching_realtime(realtime_entries, timing_stops[-1])
-        if start_rt and middle_rt and end_rt:
-            trip_date.start_delay = start_rt.arrival_delay
-            trip_date.middle_delay = middle_rt.arrival_delay
-            trip_date.end_delay = end_rt.arrival_delay
-            trip_date.has_start_middle_end_stats = True
-            meta_stats['has_start_middle_end'] += 1
+    if len(trip_stops) != 0:
+        middle_sequence = trip_stops[len(trip_stops)//2].sequence
+        # start, middle, end delay (using timing stops)
+        timing_stops = [ts for ts in trip_stops if ts.timepoint]
+        if len(timing_stops) == 0:
+            meta_stats['no_timepoints'] += 1
+        elif len(timing_stops) < 3:
+            meta_stats['not_enough_timepoints'] += 1
+        else:
+            start_rt = get_matching_realtime(realtime_entries, timing_stops[0])
+            middle_rt = get_matching_realtime(realtime_entries, min(timing_stops, key=lambda ts: abs(ts.sequence - middle_sequence)))
+            end_rt = get_matching_realtime(realtime_entries, timing_stops[-1])
+            if start_rt and middle_rt and end_rt:
+                trip_date.start_delay = start_rt.arrival_delay
+                trip_date.middle_delay = middle_rt.arrival_delay
+                trip_date.end_delay = end_rt.arrival_delay
+                trip_date.has_start_middle_end_stats = True
+                meta_stats['has_start_middle_end'] += 1
 
     delays = []
     total_delay = 0
@@ -274,7 +275,7 @@ def calculate_route_date_stats(date):
                 route_date.sum_delay += tripdate.sum_delay
                 route_date.sum_delay_squared += tripdate.sum_delay_squared
 
-            if tripdate.has_start_middle_end_stats:
+            if tripdate.hamiddle_end_stats:
                 route_date.count_has_start_middle_end_stats += 1
                 route_date.sum_start_delay += tripdate.start_delay
                 route_date.sum_middle_delay += tripdate.middle_delay
