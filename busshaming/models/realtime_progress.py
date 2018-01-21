@@ -18,10 +18,10 @@ class RealtimeProgress(models.Model):
     class Meta:
         unique_together = (('feed', 'start_date'),)
 
-    def take_processing_lock(self):
+    def take_processing_lock(self, allow_completed=False):
         with transaction.atomic():
             self.refresh_from_db()
-            if self.completed:
+            if self.completed and not allow_completed:
                 return False
             if self.in_progress is None:
                 self.in_progress = datetime.utcnow().replace(tzinfo=timezone.utc)
