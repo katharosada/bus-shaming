@@ -248,6 +248,7 @@ def calculate_route_date_stats(date):
             route_date = RouteDate(route_id=route_id, date=date)
 
         route_date.num_trips = len(trip_dates)
+        route_date.num_scheduled_trips = len([td for td in trip_dates if not td.added_from_realtime])
         route_date.num_scheduled_stops = 0
         route_date.num_realtime_stops = 0
         route_date.early_count = 0
@@ -262,6 +263,15 @@ def calculate_route_date_stats(date):
         route_date.sum_delay = 0
         route_date.sum_delay_squared = 0
 
+        route_date.trip_early_count = 0
+        route_date.trip_ontime_count = 0
+        route_date.trip_late_count = 0
+        route_date.trip_verylate_count = 0
+        route_date.scheduled_trip_early_count = 0
+        route_date.scheduled_trip_ontime_count = 0
+        route_date.scheduled_trip_late_count = 0
+        route_date.scheduled_trip_verylate_count = 0
+
         for tripdate in trip_dates:
             route_date.num_scheduled_stops += tripdate.num_scheduled_stops
             route_date.num_realtime_stops += tripdate.num_realtime_stops
@@ -275,6 +285,22 @@ def calculate_route_date_stats(date):
                 route_date.sum_delay += tripdate.sum_delay
                 route_date.sum_delay_squared += tripdate.sum_delay_squared
 
+                early = tripdate.early_count > 0
+                late = tripdate.late_count > 0
+                verylate = tripdate.verylate_count > 0
+                ontime = not (early or late or verylate)
+
+                route_date.trip_early_count += early
+                route_date.trip_ontime_count += ontime
+                route_date.trip_late_count += late
+                route_date.trip_verylate_count += verylate
+
+                if not tripdate.added_from_realtime:
+                    route_date.scheduled_trip_early_count += early
+                    route_date.scheduled_trip_ontime_count += ontime
+                    route_date.scheduled_trip_late_count += late
+                    route_date.scheduled_trip_verylate_count += verylate
+
             if tripdate.has_start_middle_end_stats:
                 route_date.count_has_start_middle_end_stats += 1
                 route_date.sum_start_delay += tripdate.start_delay
@@ -285,6 +311,10 @@ def calculate_route_date_stats(date):
             route_date.max_delay = max(td.max_delay for td in trip_dates if td.max_delay is not None)
             route_date.min_delay = min(td.min_delay for td in trip_dates if td.min_delay is not None)
 
+            route_date.ontime_percent = route_date.ontime_count / route_date.num_delay_stops
+
+        route_date.trip_ontime_percent = route_date.trip_ontime_count / route_date.num_trips
+
         if route_date.num_scheduled_stops > 0:
             route_date.realtime_coverage = mean(td.realtime_coverage for td in trip_dates if td.realtime_coverage is not None)
             accuracies = [td.realtime_accuracy for td in trip_dates if td.realtime_accuracy is not None]
@@ -292,6 +322,9 @@ def calculate_route_date_stats(date):
                 route_date.realtime_accuracy = mean(accuracies)
             else:
                 route_date.realtime_accuracy = None
+
+        if route_date.num_scheduled_trips > 0:
+            route_date.scheduled_trip_ontime_percent = route_date.scheduled_trip_ontime_count / route_date.num_scheduled_trips
 
         route_date.save()
 

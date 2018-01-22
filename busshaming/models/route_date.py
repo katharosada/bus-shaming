@@ -2,12 +2,14 @@ from django.db import models
 
 
 class RouteDate(models.Model):
+    # TODO: Refactor the heck out of this model
     route = models.ForeignKey('Route')
     date = models.DateField(db_index=True)
 
     num_scheduled_stops = models.PositiveIntegerField()
     num_realtime_stops = models.PositiveIntegerField()
     num_trips = models.PositiveIntegerField()
+    num_scheduled_trips = models.PositiveIntegerField()
 
     # Average realtime coverage/accuracy
     realtime_coverage = models.FloatField(null=True, blank=True)
@@ -17,6 +19,22 @@ class RouteDate(models.Model):
     ontime_count = models.IntegerField()
     late_count = models.IntegerField()
     verylate_count = models.IntegerField()
+
+    ontime_percent = models.FloatField(null=True, blank=True)
+
+    trip_early_count = models.IntegerField()
+    trip_ontime_count = models.IntegerField()
+    trip_late_count = models.IntegerField()
+    trip_verylate_count = models.IntegerField()
+
+    trip_ontime_percent = models.FloatField(null=True, blank=True)
+
+    scheduled_trip_early_count = models.IntegerField()
+    scheduled_trip_ontime_count = models.IntegerField()
+    scheduled_trip_late_count = models.IntegerField()
+    scheduled_trip_verylate_count = models.IntegerField()
+
+    scheduled_trip_ontime_percent = models.FloatField(null=True, blank=True)
 
     count_has_start_middle_end_stats = models.IntegerField(default=False)
     sum_start_delay = models.IntegerField(null=True, blank=True)

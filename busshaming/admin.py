@@ -49,7 +49,7 @@ class RouteAdmin(admin.ModelAdmin):
 
 @admin.register(RouteDate)
 class RouteDateAdmin(admin.ModelAdmin):
-    list_display = ('id', 'route', 'date', 'realtime_coverage', 'delay_average', 'delay_std_dev', 'start_delay_average', 'middle_delay_average', 'end_delay_average')
+    list_display = ('id', 'route', 'date', 'realtime_coverage', 'num_trips', 'ontime_percent', 'trip_ontime_percent', 'scheduled_trip_ontime_percent')
     ordering = ('date',)
     search_fields = ('route__short_name',)
 
