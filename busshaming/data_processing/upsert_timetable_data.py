@@ -18,8 +18,8 @@ def process_agencies(feed, csvreader):
         agency = Agency.objects.filter(feed=feed, gtfs_agency_id=gtfs_agency_id).first()
         if agency is None:
             agency = Agency(feed=feed, gtfs_agency_id=gtfs_agency_id)
-        agency.name = row['agency_name']
-        agency.save()
+            agency.name = row['agency_name']
+            agency.save()
 
 
 def process_routes(feed, csvreader, fetchtime):
