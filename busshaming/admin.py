@@ -4,7 +4,6 @@ from .models import (
     Agency,
     Feed,
     FeedTimetable,
-    RealtimeEntry,
     RealtimeProgress,
     Route,
     RouteDate,
@@ -42,9 +41,10 @@ class RealtimeProgressAdmin(admin.ModelAdmin):
 
 @admin.register(Route)
 class RouteAdmin(admin.ModelAdmin):
-    list_display = ('gtfs_route_id', 'short_name', 'long_name')
+    list_display = ('gtfs_route_id', 'short_name', 'long_name', 'agency')
     ordering = ('gtfs_route_id',)
     search_fields = ('gtfs_route_id', 'short_name', 'long_name')
+    list_filter = ('agency',)
 
 
 @admin.register(RouteDate)
