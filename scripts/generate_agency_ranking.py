@@ -21,11 +21,11 @@ def main(is_best, verylate):
     results = []
     for agency_name in routedates:
         rds = routedates[agency_name]
-        num_trips = sum([rd.num_scheduled_trips for rd in rds])
+        num_trips = sum([rd.num_trips for rd in rds])
         if num_trips == 0:
             continue
-        total_ontime = sum([rd.scheduled_trip_ontime_count for rd in rds])
-        total_verylate = sum([rd.scheduled_trip_verylate_count for rd in rds])
+        total_ontime = sum([rd.trip_ontime_count for rd in rds])
+        total_verylate = sum([rd.trip_verylate_count for rd in rds])
         if num_trips < MIN_TRIPS:
             continue
         result = [
