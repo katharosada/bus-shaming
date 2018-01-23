@@ -26,8 +26,6 @@ def main(is_best, verylate):
             continue
         total_ontime = sum([rd.trip_ontime_count for rd in rds])
         total_verylate = sum([rd.trip_verylate_count for rd in rds])
-        if num_trips < MIN_TRIPS:
-            continue
         result = [
             agency_name,
             num_trips,

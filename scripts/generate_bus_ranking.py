@@ -55,7 +55,7 @@ def main(is_best, verylate):
     for i in range(50):
         res = results[i]
         desc = '\t'.join(res[4:])
-        out = f'{i+1}\t{res[0]}\t{res[1]}\t{res[2]:.2f}\t{res[3]:.2f}\t' + desc
+        out = f'{i+1}\t{res[1]}\t{res[2]:.2f}\t{res[3]:.2f}\t' + desc
         print(out)
 
     print()
