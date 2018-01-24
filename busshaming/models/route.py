@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta
+
 from django.db import models
 
 
@@ -17,3 +19,8 @@ class Route(models.Model):
 
     def __str__(self):
         return f'{self.gtfs_route_id} - {self.short_name}'
+
+    def recent_dates(self):
+        start = datetime.now().date() - timedelta(days=14)
+
+        return self.routedate_set.filter(date__gte=start)

@@ -8,7 +8,7 @@ from rest_framework_nested.serializers import NestedHyperlinkedModelSerializer
 from rest_framework.permissions import AllowAny
 
 
-from .models import Route, StopSequence, Trip, TripDate, RealtimeEntry
+from .models import Route, Trip, TripDate, RealtimeEntry, RouteDate
 
 
 class TripSerializer(serializers.HyperlinkedModelSerializer):
@@ -22,35 +22,23 @@ class TripViewSet(mixins.RetrieveModelMixin, viewsets.GenericViewSet):
     serializer_class = TripSerializer
 
 
-class StopSequenceSerializer(serializers.HyperlinkedModelSerializer):
-    trip_set = serializers.HyperlinkedRelatedField(
-        many=True,
-        read_only=True,
-        view_name='trip-detail'
-    )
-
+class RouteDateModelSerializer(serializers.HyperlinkedModelSerializer):
     class Meta:
-        model = StopSequence
-        fields = ('id', 'sequence_hash', 'stop_sequence', 'length', 'route', 'trip_headsign', 'trip_short_name', 'direction', 'trip_set')
+        model = RouteDate
+        fields = ('id', 'route', 'date', 'num_trips', 'trip_early_count', 'trip_ontime_count', 'trip_late_count', 'trip_verylate_count', 'trip_ontime_percent', 'min_delay', 'max_delay')
 
 
-class StopSequenceLiteSerializer(serializers.HyperlinkedModelSerializer):
-    class Meta:
-        model = StopSequence
-        fields = ('id', 'sequence_hash', 'stop_sequence', 'length', 'route', 'trip_headsign', 'trip_short_name', 'direction')
-
-
-class StopSequenceViewSet(viewsets.ReadOnlyModelViewSet):
-    queryset = StopSequence.objects.all()
-    serializer_class = StopSequenceSerializer
+class RouteDateModelViewSet(viewsets.ReadOnlyModelViewSet):
+    queryset = RouteDate.objects.all()
+    serializer_class = RouteDateModelSerializer
 
 
 class RouteSerializer(serializers.HyperlinkedModelSerializer):
-    stopsequence_set = StopSequenceLiteSerializer
+    recent_dates = RouteDateModelSerializer(read_only=True, many=True)
 
     class Meta:
         model = Route
-        fields = ('id', 'url', 'gtfs_route_id', 'short_name', 'long_name', 'description', 'color', 'text_color', 'route_url', 'stopsequence_set')
+        fields = ('id', 'url', 'gtfs_route_id', 'short_name', 'long_name', 'description', 'color', 'text_color', 'recent_dates')
         depth = 1
 
 
