@@ -17,7 +17,7 @@ This site is a work in progress, but the ultimate goal is to publish statistics 
 Once the stats come in, we'll be able to answer not only if there is a bus worse than the 370 but also if third-party agencies provided better or worse service than the government owned bus services.
         </p>
         <p>
-If you're interested in helping out with this project, check it out on GitHub.
+If you're interested in helping out with this project, check it out on <a href="https://github.com/katharosada/bus-shaming">GitHub</a>.
 Web design skills are lacking (as you can see) and data science skills would be a huge bonus.
         </p>
       </div>
