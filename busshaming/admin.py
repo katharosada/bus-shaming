@@ -7,6 +7,7 @@ from .models import (
     RealtimeProgress,
     Route,
     RouteDate,
+    RouteRanking,
     Stop,
     StopSequence,
     Trip,
@@ -52,6 +53,13 @@ class RouteDateAdmin(admin.ModelAdmin):
     list_display = ('id', 'route', 'date', 'realtime_coverage', 'num_trips', 'ontime_percent', 'trip_ontime_percent', 'scheduled_trip_ontime_percent')
     ordering = ('date',)
     search_fields = ('route__short_name',)
+
+
+@admin.register(RouteRanking)
+class RouteRankingAdmin(admin.ModelAdmin):
+    list_display = ('date', 'metric', 'timespan', 'rank', 'route', 'value')
+    ordering = ('date',)
+    list_filter = ('metric', 'timespan')
 
 
 @admin.register(Stop)
