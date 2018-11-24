@@ -31,7 +31,7 @@ def to_schedule_relationship(proto):
         return ScheduleRelationship.ADDED.value
     elif proto == SCHEDULE_RELATIONSHIP['UNSCHEDULED']:
         return ScheduleRelationship.UNSCHEDULED.value
-    elif proto == SCHEDULE_RELATIONSHIP['CANCELLED']:
+    elif proto == SCHEDULE_RELATIONSHIP['CANCELED']:
         return ScheduleRelationship.CANCELLED.value
     return ScheduleRelationship.SCHEDULED.value
 
