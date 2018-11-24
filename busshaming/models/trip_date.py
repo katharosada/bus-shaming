@@ -1,5 +1,7 @@
 from django.db import models
 
+from busshaming.enums import ScheduleRelationship
+
 
 class TripDate(models.Model):
     trip = models.ForeignKey('Trip')
@@ -44,6 +46,10 @@ class TripDate(models.Model):
 
     sum_delay = models.IntegerField(null=True, blank=True)
     sum_delay_squared = models.IntegerField(null=True, blank=True)
+
+    # New stuff
+    schedule_relationship = models.SmallIntegerField(choices=ScheduleRelationship.choices(), null=True, blank=True)
+    vehicle_id = models.CharField(max_length=100, null=True, blank=True)
 
     class Meta:
         unique_together = ('trip', 'date')

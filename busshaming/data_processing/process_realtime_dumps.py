@@ -9,6 +9,7 @@ import pytz
 from google.transit import gtfs_realtime_pb2
 
 from busshaming.models import Trip, TripDate, TripStop, RealtimeEntry, Route, Stop
+from busshaming.enums import ScheduleRelationship
 
 S3_BUCKET_NAME = os.environ.get('S3_BUCKET_NAME', 'busshaming-realtime-dumps')
 
@@ -23,8 +24,19 @@ ROUTE_ID_SET = set()
 
 upsert_log = {}
 
+def to_schedule_relationship(proto):
+    if proto == SCHEDULE_RELATIONSHIP['SCHEDULED']:
+        return ScheduleRelationship.SCHEDULED.value
+    elif proto == SCHEDULE_RELATIONSHIP['ADDED']:
+        return ScheduleRelationship.ADDED.value
+    elif proto == SCHEDULE_RELATIONSHIP['UNSCHEDULED']:
+        return ScheduleRelationship.UNSCHEDULED.value
+    elif proto == SCHEDULE_RELATIONSHIP['CANCELLED']:
+        return ScheduleRelationship.CANCELLED.value
+    return ScheduleRelationship.SCHEDULED.value
 
-def add_missing_tripdate(feed, realtime_trip):
+
+def add_missing_tripdate(feed, realtime_trip, vehicle_id):
     gtfs_trip_id = realtime_trip.trip_id
     start_date = realtime_trip.start_date
     if DEBUG:
@@ -49,7 +61,8 @@ def add_missing_tripdate(feed, realtime_trip):
         return TripDate.objects.get(trip=trip, date=date)
     except TripDate.DoesNotExist as e:
         pass
-    tripdate = TripDate(trip=trip, date=date, added_from_realtime=True)
+    schedule_relationship = to_schedule_relationship(realtime_trip.schedule_relationship)    
+    tripdate = TripDate(trip=trip, date=date, added_from_realtime=True, vehicle_id=vehicle_id, schedule_relationship=schedule_relationship)
     tripdate.save()
     if trip.scheduled:
         global_stats['missing_tripdates'] += 1
@@ -136,7 +149,7 @@ def process_trip_update(feed, trip_dates, stops, feed_tz, trip_update, threshold
         trip.trip_id = 'unscheduled_' + trip_update.vehicle.id
     key = (trip.trip_id, start_date_str)
     if key not in trip_dates:
-        trip_date = add_missing_tripdate(feed, trip)
+        trip_date = add_missing_tripdate(feed, trip, trip_update.vehicle.id)
         if trip_date is not None:
             if DEBUG:
                 print("COULDN'T FIND IN SCHEDULE: {}".format(key))
@@ -145,6 +158,10 @@ def process_trip_update(feed, trip_dates, stops, feed_tz, trip_update, threshold
         trip_date = trip_dates[key]
     if trip_date is None:
         return
+    if trip.schedule_relationship != SCHEDULE_RELATIONSHIP['SCHEDULED']:
+        trip_date.schedule_relationship = to_schedule_relationship(trip.schedule_relationship)
+        trip_date.vehicle_id = trip_update.vehicle.id
+        trip_date.save()
     if DEBUG:
         print(f'Upserting realtime entries for tripdate {trip_date.id}')
     for stop_update in trip_update.stop_time_update:
@@ -156,9 +173,10 @@ def process_trip_update(feed, trip_dates, stops, feed_tz, trip_update, threshold
                 stop = get_stop(feed, stop_update.stop_id, stops)
             arrival_time = datetime.fromtimestamp(stop_update.arrival.time, feed_tz)
             departure_time = datetime.fromtimestamp(stop_update.departure.time, feed_tz)
+            schedule_relationship = to_schedule_relationship(stop_update.schedule_relationship)
             # Upsert RealtimeEntry
             # RealtimeEntry.objects.upsert(trip_date.id, stop.id, stop_update.stop_sequence, arrival_time, stop_update.arrival.delay, departure_time, stop_update.departure.delay)
-            upsert_log[(trip_date.id, stop.id)] = (stop_update.stop_sequence, arrival_time, stop_update.arrival.delay, departure_time, stop_update.departure.delay)
+            upsert_log[(trip_date.id, stop.id, stop_update.stop_sequence)] = (arrival_time, stop_update.arrival.delay, departure_time, stop_update.departure.delay, schedule_relationship)
             global_stats['stop_updates_stored'] += 1
 
 

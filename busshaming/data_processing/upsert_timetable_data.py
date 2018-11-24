@@ -6,7 +6,7 @@ from collections import defaultdict
 from django.contrib.gis.geos import Point
 
 from busshaming.models import Agency, Route, Stop, Trip, TripDate, TripStop
-
+from busshaming.enums import ScheduleRelationship
 
 DAYS_OF_WEEK = ['monday', 'tuesday', 'wednesday', 'thursday', 'friday', 'saturday', 'sunday']
 
@@ -156,7 +156,7 @@ def process_trips(feed, all_trip_dates, trip_stops, csvreader, fetchtime):
         for new_trip_date in trip_dates:
             old_trip_date = old_trip_dates.pop(new_trip_date, None)
             if old_trip_date is None:
-                TripDate(trip=trip, date=new_trip_date).save()
+                TripDate(trip=trip, date=new_trip_date, schedule_relationship=ScheduleRelationship.SCHEDULED.value).save()
         for old_trip_date in old_trip_dates.values():
             # Don't delete trips older than the new dump just because they aren't listed anymore.
             if old_trip_date.date > today:

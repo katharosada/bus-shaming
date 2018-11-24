@@ -9,7 +9,7 @@ from django.db import transaction
 
 from busshaming.data_processing import process_realtime_dumps
 
-from busshaming.models import Feed, RealtimeProgress
+from busshaming.models import Feed, FeedTimetable, RealtimeProgress
 
 
 def new_realtime_progress(feed, start_date):
@@ -20,6 +20,7 @@ def new_realtime_progress(feed, start_date):
 
 def find_available_work(feed_slug):
     feed = Feed.objects.get(slug=feed_slug)
+    latest_watermark = get_latest_watermark(feed)
 
     # Get all logged days of processing
     with transaction.atomic():
@@ -40,7 +41,15 @@ def find_available_work(feed_slug):
                 return progress_day
             prev_start = progress_day.start_date
 
+        if prev_start >= latest_watermark.date():
+            # Need to wait until timetable catches up.
+            print(f'Latest watermark is {latest_watermark}. Holding off on realtime.')
+            return None
         return new_realtime_progress(feed, prev_start + timedelta(days=1))
+
+def get_latest_watermark(feed):
+    feed_timetable = FeedTimetable.objects.filter(feed=feed).order_by('processed_watermark').first()
+    return feed_timetable.processed_watermark
 
 
 if __name__ == '__main__':
@@ -48,5 +57,6 @@ if __name__ == '__main__':
 
     while True:
         progress = find_available_work('nsw-buses')
-        process_realtime_dumps.process_next(progress, 15)
+        if progress is not None:
+            process_realtime_dumps.process_next(progress, 15)
         time.sleep(2)

@@ -18,3 +18,10 @@ class MetricTimespan(ChoiceEnum):
     DAY = 1
     SEVEN_DAYS = 2
     CALENDAR_MONTH = 3
+
+
+class ScheduleRelationship(ChoiceEnum):
+    SCHEDULED = 1
+    ADDED = 2
+    UNSCHEDULED = 3
+    CANCELLED = 4
