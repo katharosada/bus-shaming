@@ -30,7 +30,7 @@ class FeedAdmin(admin.ModelAdmin):
 
 @admin.register(FeedTimetable)
 class FeedTimetableAdmin(admin.ModelAdmin):
-    list_display = ('id', 'feed', 'timetable_url', 'fetch_last_modified', 'last_processed_zip')
+    list_display = ('id', 'feed', 'timetable_url', 'fetch_last_modified', 'last_processed_zip', 'active', 'processed_watermark')
     ordering = ('id',)
 
 

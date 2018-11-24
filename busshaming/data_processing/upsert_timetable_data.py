@@ -1,6 +1,6 @@
 import csv
 import io
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from collections import defaultdict
 
 from django.contrib.gis.geos import Point
@@ -77,7 +77,7 @@ def process_trip_dates(csvreader, csvreader_calendar_dates, fetchtime):
         cur_date = start_date
         if cur_date < today:
             cur_date = today
-        while cur_date <= end_date and cur_date < limit:
+        while cur_date <= end_date and cur_date <= limit:
             if cur_date.weekday() in days:
                 # Add to set of days.
                 result[row['service_id']].add(cur_date)
@@ -91,7 +91,7 @@ def process_trip_dates(csvreader, csvreader_calendar_dates, fetchtime):
                 if exception_date in result[row['service_id']]:
                     result[row['service_id']].remove(exception_date)
 
-    return result
+    return result, limit
 
 
 def process_trips(feed, all_trip_dates, trip_stops, csvreader, fetchtime):
@@ -246,7 +246,7 @@ def process_stop_times(feed, csvreader):
                         print(f'MISMATCH timepoint {gtfs_trip_id}')
                         mismatch = True
                 if mismatch:
-                    print('Intending to create new trip version for {gtfs_trip_id}')
+                    print(f'Intending to create new trip version for {gtfs_trip_id}')
                     new_stop_sets[gtfs_trip_id] = stop_sets[gtfs_trip_id]
         else:
             # this trip has no stops already so we don't need to compare
@@ -258,10 +258,10 @@ def process_zip(feed, zfile, fetchtime):
     process_agencies(feed, csv.DictReader(io.TextIOWrapper(zfile.open('agency.txt'))))
     process_routes(feed, csv.DictReader(io.TextIOWrapper(zfile.open('routes.txt'))), fetchtime)
     process_stops(feed, csv.DictReader(io.TextIOWrapper(zfile.open('stops.txt'))))
-    trip_dates = process_trip_dates(
+    trip_dates, limit = process_trip_dates(
             csv.DictReader(io.TextIOWrapper(zfile.open('calendar.txt'))),
             csv.DictReader(io.TextIOWrapper(zfile.open('calendar_dates.txt'))),
             fetchtime)
     trip_stops = process_stop_times(feed, csv.DictReader(io.TextIOWrapper(zfile.open('stop_times.txt'))))
     process_trips(feed, trip_dates, trip_stops, csv.DictReader(io.TextIOWrapper(zfile.open('trips.txt'))), fetchtime)
-    return True
+    return True, datetime(limit.year, limit.month, limit.day, tzinfo=timezone.utc)

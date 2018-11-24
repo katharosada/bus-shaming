@@ -26,6 +26,7 @@ def download_zip(timetable_feed, temp_dir):
     if response['KeyCount'] != 0:
         print(f'{response["KeyCount"]} new timetable data for {timetable_feed}')
         key = response['Contents'][0]['Key']
+        print(f'Downloading file: {key}')
         s3 = boto3.resource('s3')
         tmp_path = os.path.join(temp_dir, key.split('/')[-1])
         s3.Object(S3_BUCKET_NAME, key).download_file(tmp_path)
@@ -34,17 +35,27 @@ def download_zip(timetable_feed, temp_dir):
     return None, None
 
 
-def fill_tripdate_gap(feed, last_processed_file, new_file, temp_dir):
-    # If it's been almost 2 weeks from the last timetable, we need to update the trip dates
+def fill_tripdate_gap(feed, timetable_feed, until_time, temp_dir):
+    if not timetable_feed.last_processed_zip:
+        return
+    if not timetable_feed.processed_watermark:
+        timetable_feed.processed_watermark = datetime_from_s3_key(timetable_feed.last_processed_zip) + timedelta(days=13)
+    # If it's been a long time since the last timetable, we need to update the trip dates
     # since we only fill them 2 weeks in advance
-    new_fetchtime = datetime_from_s3_key(last_processed_file) + timedelta(days=13)
-    while new_fetchtime < datetime_from_s3_key(new_file):
+    if timetable_feed.processed_watermark < until_time:
         s3 = boto3.resource('s3')
-        tmp_path = os.path.join(temp_dir, key.split('/')[-1])
-        s3.Object(S3_BUCKET_NAME, last_processed_file).download_file(tmp_path)
-        print(f'Updating tripdate gap to time: {new_fetchtime}')
-        process_zip(feed, tmp_path, new_fetchtime)
-        new_fetchtime += timedelta(days=13)
+        tmp_path = os.path.join(temp_dir, timetable_feed.last_processed_zip.split('/')[-1])
+        s3.Object(S3_BUCKET_NAME, timetable_feed.last_processed_zip).download_file(tmp_path)
+        
+    while timetable_feed.processed_watermark < until_time:
+        new_fetchtime = timetable_feed.processed_watermark
+        print(f'Updating tripdate gap from time: {new_fetchtime} using file {timetable_feed.last_processed_zip}')
+        success, limit = process_zip(feed, tmp_path, new_fetchtime)
+        if success:
+            timetable_feed.processed_watermark = limit
+            timetable_feed.save()
+        new_fetchtime = limit
+        print(f'Updated up to {limit} now.')
 
 
 def datetime_from_s3_key(obj_key):
@@ -55,24 +66,30 @@ def datetime_from_s3_key(obj_key):
 
 def fetch_and_process_timetables():
     feed = Feed.objects.get(slug='nsw-buses')
-    timetable_feeds = FeedTimetable.objects.filter(feed=feed).order_by('id').prefetch_related('feed')
+    timetable_feeds = FeedTimetable.objects.filter(feed=feed, active=True).order_by('id').prefetch_related('feed')
     for timetable_feed in timetable_feeds:
+        print(f'Looking at {timetable_feed}')
         with tempfile.TemporaryDirectory() as temp_dir:
             tmp_path, obj_key = download_zip(timetable_feed, temp_dir)
             if tmp_path is not None:
                 # Fill potential trip date gap:
-                if timetable_feed.last_processed_zip:
-                    fill_tripdate_gap(feed, timetable_feed.last_processed_zip, obj_key, temp_dir)
+                fill_tripdate_gap(feed, timetable_feed, datetime_from_s3_key(obj_key), temp_dir)
                 # Get datetime from filename
                 fetchtime = datetime_from_s3_key(obj_key)
-                success = process_zip(feed, tmp_path, fetchtime)
+                success, limit = process_zip(feed, tmp_path, fetchtime)
                 if success:
+                    timetable_feed.processed_watermark = limit
                     timetable_feed.last_processed_zip = obj_key
                     timetable_feed.save()
                 os.remove(tmp_path)
+            else:
+                # If there's no updates, we need to make sure we keep filling out the tripdates
+                # We need the timetable to be filled out up to 7 days from now.
+                last_week = datetime.utcnow().replace(tzinfo=timezone.utc) + timedelta(days=7)
+                fill_tripdate_gap(feed, timetable_feed, datetime.utcnow().replace(tzinfo=timezone.utc), temp_dir)
 
 
 def process_zip(feed, tmp_path, fetchtime):
     with zipfile.ZipFile(tmp_path) as zfile:
         return upsert_timetable_data.process_zip(feed, zfile, fetchtime)
-    return False
+    return False, None

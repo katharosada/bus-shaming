@@ -6,6 +6,8 @@ class FeedTimetable(models.Model):
     timetable_url = models.URLField()
     fetch_last_modified = models.CharField(max_length=50, blank=True, null=True)
     last_processed_zip = models.CharField(max_length=50, blank=True, null=True)
+    active = models.BooleanField(default=True)
+    processed_watermark = models.DateTimeField(null=True)
 
     class Meta:
         unique_together = ('feed', 'timetable_url')
