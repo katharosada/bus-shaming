@@ -247,15 +247,16 @@ def clear_upsert_log():
 def write_upsert_log():
     global upsert_log
     print(f'Upsert log contains {len(upsert_log)} entries.')
-    list_batch = []
+    # list_batch = []
     for realtime_key, value in upsert_log.items():
         #RealtimeEntry.objects.upsert(trip_date.id, stop.id, stop_update.stop_sequence, arrival_time, stop_update.arrival.delay, departure_time, stop_update.departure.delay)
-        list_batch.append((*realtime_key, *value))
-    start = 0
-    while start < len(list_batch):
-        batch = list_batch[start : start + 10]
-        start += 10
-        RealtimeEntry.objects.upsert_bulk(batch)
+        RealtimeEntry.objects.upsert(*realtime_key, *value)
+    #    list_batch.append((*realtime_key, *value))
+    #start = 0
+    #while start < len(list_batch):
+    #    batch = list_batch[start : start + 10]
+    #    start += 10
+    #    RealtimeEntry.objects.upsert_bulk(batch)
 
 
 def process_next(realtime_progress, num_dumps):
