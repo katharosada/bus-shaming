@@ -59,7 +59,7 @@ class RealtimeProgress(models.Model):
 
     def end_time(self):
         # 36h after the start time
-        return self.start_time() + timedelta(hours=36)
+        return self.start_time() + timedelta(hours=32)
 
     def __str__(self):
         return f'Progress shard {self.start_date} ({self.feed})'

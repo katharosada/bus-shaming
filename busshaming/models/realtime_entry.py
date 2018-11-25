@@ -1,3 +1,4 @@
+import itertools
 import uuid
 
 from django.db import connection, models
@@ -18,10 +19,32 @@ SET arrival_time = EXCLUDED.arrival_time,
 '''
 
 
+UPSERT_ENTRY_BULK = '''
+INSERT INTO busshaming_realtimeentry (id, trip_date_id, stop_id, sequence, arrival_time, arrival_delay, departure_time, departure_delay, schedule_relationship)
+VALUES {}
+ON CONFLICT (trip_date_id, stop_id, sequence)
+DO UPDATE
+SET arrival_time = EXCLUDED.arrival_time,
+    arrival_delay = EXCLUDED.arrival_delay,
+    departure_time = EXCLUDED.departure_time,
+    departure_delay = EXCLUDED.departure_delay,
+    schedule_relationship = EXCLUDED.schedule_relationship
+'''
+
+def generate_upsert_bulk(rows):
+    entry = '(uuid_generate_v4(), %s, %s, %s, %s, %s, %s, %s, %s)'
+    return UPSERT_ENTRY_BULK.format(', '.join([entry] * rows))
+
+
 class RealtimeEntryManager(models.Manager):
     def upsert(self, trip_date_id, stop_id, sequence, arrival_time, arrival_delay, departure_time, departure_delay, schedule_relationship):
         with connection.cursor() as cursor:
             cursor.execute(UPSERT_ENTRY, (trip_date_id, stop_id, sequence, arrival_time, arrival_delay, departure_time, departure_delay, schedule_relationship))
+
+    def upsert_bulk(self, values):
+        bulk_sql = generate_upsert_bulk(len(values))
+        with connection.cursor() as cursor:
+            cursor.execute(bulk_sql, list(itertools.chain.from_iterable(values)))
 
 
 class RealtimeEntry(models.Model):

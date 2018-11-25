@@ -154,6 +154,7 @@ def process_trip_update(feed, trip_dates, stops, feed_tz, trip_update, threshold
             if DEBUG:
                 print("COULDN'T FIND IN SCHEDULE: {}".format(key))
                 print(trip)
+            trip_dates[key] = trip_date
     else:
         trip_date = trip_dates[key]
     if trip_date is None:
@@ -245,9 +246,16 @@ def clear_upsert_log():
 
 def write_upsert_log():
     global upsert_log
+    print(f'Upsert log contains {len(upsert_log)} entries.')
+    list_batch = []
     for realtime_key, value in upsert_log.items():
         #RealtimeEntry.objects.upsert(trip_date.id, stop.id, stop_update.stop_sequence, arrival_time, stop_update.arrival.delay, departure_time, stop_update.departure.delay)
-        RealtimeEntry.objects.upsert(*realtime_key, *value)
+        list_batch.append((*realtime_key, *value))
+    start = 0
+    while start < len(list_batch):
+        batch = list_batch[start : start + 20]
+        start += 20
+        RealtimeEntry.objects.upsert_bulk(batch)
 
 
 def process_next(realtime_progress, num_dumps):
