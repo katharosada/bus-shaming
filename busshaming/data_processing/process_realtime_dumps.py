@@ -256,7 +256,8 @@ def write_upsert_log():
     while start < len(list_batch):
         batch = list_batch[start : start + 500]
         start += 500
-        RealtimeEntry.objects.upsert_bulk(batch)
+        if len(batch) != 0:
+            RealtimeEntry.objects.upsert_bulk(batch)
 
 
 def process_next(realtime_progress, num_dumps):
