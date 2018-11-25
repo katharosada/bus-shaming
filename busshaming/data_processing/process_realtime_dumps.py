@@ -253,8 +253,8 @@ def write_upsert_log():
         list_batch.append((*realtime_key, *value))
     start = 0
     while start < len(list_batch):
-        batch = list_batch[start : start + 20]
-        start += 20
+        batch = list_batch[start : start + 10]
+        start += 10
         RealtimeEntry.objects.upsert_bulk(batch)
 
 

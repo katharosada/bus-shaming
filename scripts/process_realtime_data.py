@@ -58,5 +58,5 @@ if __name__ == '__main__':
     while True:
         progress = find_available_work('nsw-buses')
         if progress is not None:
-            process_realtime_dumps.process_next(progress, 15)
+            process_realtime_dumps.process_next(progress, 30)
         time.sleep(2)
