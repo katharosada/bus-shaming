@@ -20,12 +20,13 @@ class RealtimeProgress(models.Model):
 
     def take_processing_lock(self, allow_completed=False):
         with transaction.atomic():
-            self.refresh_from_db()
-            if self.completed and not allow_completed:
+            me = RealtimeProgress.objects.select_for_update().get(id=self.id)
+            if me.completed and not allow_completed:
                 return False
-            if self.in_progress is None:
-                self.in_progress = datetime.utcnow().replace(tzinfo=timezone.utc)
-                self.save()
+            if me.in_progress is None:
+                me.in_progress = datetime.utcnow().replace(tzinfo=timezone.utc)
+                me.save()
+                self.refresh_from_db()
                 return True
             return False
 
