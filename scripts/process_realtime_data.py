@@ -1,7 +1,7 @@
 import django
 import time
 import cProfile
-from datetime import timedelta
+from datetime import timedelta, date
 
 django.setup()
 
@@ -11,6 +11,13 @@ from busshaming.data_processing import process_realtime_dumps
 
 from busshaming.models import Feed, FeedTimetable, RealtimeProgress
 
+# Missing raw data from this time.
+date_blacklist_start = date(2018, 7, 24)
+date_blacklist_end = date(2018, 8, 28) # not inclusive
+
+
+def start_date_in_blacklist(start_date):
+    return start_date >= date_blacklist_start and start_date < date_blacklist_end
 
 def new_realtime_progress(feed, start_date):
     progress = RealtimeProgress(feed=feed, start_date=start_date)
@@ -35,8 +42,9 @@ def find_available_work(feed_slug):
             return progresses[0]
         prev_start = progresses[0].start_date
         for progress_day in progresses[1:]:
-            if progress_day.start_date != prev_start + timedelta(days=1):
-                return new_realtime_progress(feed, prev_start + timedelta(days=1))
+            expected_start_date = prev_start + timedelta(days=1)
+            if progress_day.start_date != expected_start_date and not start_date_in_blacklist(expected_start_date):
+                return new_realtime_progress(feed, expected_start_date)
             if not progress_day.completed and progress_day.in_progress is None:
                 return progress_day
             prev_start = progress_day.start_date
@@ -45,7 +53,11 @@ def find_available_work(feed_slug):
             # Need to wait until timetable catches up.
             print(f'Latest watermark is {latest_watermark}. Holding off on realtime.')
             return None
-        return new_realtime_progress(feed, prev_start + timedelta(days=1))
+
+        new_start_date = prev_start + timedelta(days=1)
+        if start_date_in_blacklist(new_start_date):
+            new_start_date = date_blacklist_end
+        return new_realtime_progress(feed, new_start_date)
 
 def get_latest_watermark(feed):
     feed_timetable = FeedTimetable.objects.filter(feed=feed).order_by('processed_watermark').first()
