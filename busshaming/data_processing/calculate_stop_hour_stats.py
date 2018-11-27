@@ -42,7 +42,7 @@ def calculated_weighted_gaps(day_start, arrival_times):
     return weighted_gaps
 
 def expected_wait(weighted_gaps):
-    sum(gap * weight for gap, weight in weighted_gaps) / sum(weight for gap, weight in weighted_gaps)
+    return sum(gap * weight for gap, weight in weighted_gaps) / sum(weight for gap, weight in weighted_gaps)
 
 def is_incomplete_day(weighted_gaps):
     return len(weighted_gaps) == 0 or sum(weight for gap, weight in weighted_gaps) < 3600

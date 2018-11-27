@@ -8,6 +8,8 @@ from .models import (
     Route,
     RouteDate,
     RouteRanking,
+    RouteStopDay,
+    RouteStopHour,
     Stop,
     StopSequence,
     Trip,
@@ -60,6 +62,18 @@ class RouteRankingAdmin(admin.ModelAdmin):
     list_display = ('date', 'metric', 'timespan', 'rank', 'route', 'value')
     ordering = ('date',)
     list_filter = ('metric', 'timespan')
+
+
+@admin.register(RouteStopDay)
+class RouteStopDay(admin.ModelAdmin):
+    list_display = ('route', 'stop', 'date', 'scheduled_bus_count', 'realtime_bus_count', 'schedule_wait_time_seconds_avg')
+    ordering = ('date', 'route')
+
+
+@admin.register(RouteStopHour)
+class RouteStopHour(admin.ModelAdmin):
+    list_display = ('route', 'stop', 'date', 'hour', 'scheduled_bus_count', 'realtime_bus_count', 'expected_random_wait_time_seconds', 'realtime_random_wait_time_seconds')
+    ordering = ('date', 'route')
 
 
 @admin.register(Stop)
