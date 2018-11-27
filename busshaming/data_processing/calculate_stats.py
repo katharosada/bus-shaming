@@ -5,6 +5,7 @@ from collections import defaultdict
 import pytz
 
 from busshaming.models import TripDate, TripStop, RealtimeEntry, RouteDate
+from busshaming.data_processing.calculate_stop_hour_stats import calculate_stop_hour_stats
 
 AU_TIMEZONE = pytz.timezone('Australia/Sydney')
 
@@ -143,16 +144,16 @@ def calculate_tripdate_stats(trip_date):
     if len(trip_stops) > 0:
         realtime_coverage, realtime_accuracy, errors = validate_tripstop_and_realtime(trip_stops, realtime_entries)
         if errors:
-            if trip_date.added_from_realtime or trip_date.trip.added_from_realtime:
-                print('Added from realtime')
-            else:
-                print('NOT ADDED FROM REALTIME')
-            print('TripDate', trip_date.id)
-            print('Trip', trip_date.trip_id)
-            print(trip_stops)
-            print(realtime_entries)
-            for error in errors:
-                print(error)
+            # if trip_date.added_from_realtime or trip_date.trip.added_from_realtime:
+            #     print('Added from realtime')
+            # else:
+            #     print('NOT ADDED FROM REALTIME')
+            # print('TripDate', trip_date.id)
+            # print('Trip', trip_date.trip_id)
+            # print(trip_stops)
+            # print(realtime_entries)
+            # for error in errors:
+            #     print(error)
             meta_stats['irreconcileable_stop_mismatch'] += 1
         trip_date.realtime_coverage = realtime_coverage
         if realtime_coverage < 0.9:
@@ -234,11 +235,7 @@ def get_matching_realtime(realtime_entries, trip_stop):
     return None
 
 
-def calculate_route_date_stats(date):
-    trip_dates_by_route = defaultdict(list)
-    for tripdate in TripDate.objects.filter(date=date).prefetch_related('trip').all():
-        trip_dates_by_route[tripdate.trip.route_id].append(tripdate)
-
+def calculate_route_date_stats(date, trip_dates_by_route):
     for route_id in trip_dates_by_route:
         trip_dates = trip_dates_by_route[route_id]
 
@@ -354,4 +351,10 @@ def calculate_stats_for_day(date):
         meta_stats['trip_dates_processed'] += 1
     for stat in meta_stats:
         print(f'{stat}: {meta_stats[stat]}')
-    calculate_route_date_stats(date)
+
+    # Per-route stats
+    trip_dates_by_route = defaultdict(list)
+    for tripdate in TripDate.objects.filter(date=date).prefetch_related('trip').all():
+        trip_dates_by_route[tripdate.trip.route_id].append(tripdate)
+    calculate_route_date_stats(date, trip_dates_by_route)
+    calculate_stop_hour_stats(date, trip_dates_by_route)
