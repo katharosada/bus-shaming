@@ -6,7 +6,7 @@ import requests
 
 
 GTFS_API_KEY = os.environ.get('TRANSPORT_NSW_API_KEY')
-REALTIME_URL = 'https://api.transport.nsw.gov.au/v1/gtfs/realtime/buses/'
+REALTIME_URL = 'https://api.transport.nsw.gov.au/v1/gtfs/realtime/buses'
 FEED_SLUG = 'nsw-buses'
 
 
@@ -29,3 +29,6 @@ def main(event, context):
         print('Fetch failed:')
         print(response.status_code)
         print(response.content)
+
+if __name__ == '__main__':
+    main(None, None)

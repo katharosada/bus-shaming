@@ -12,12 +12,24 @@ from busshaming.data_processing import process_realtime_dumps
 from busshaming.models import Feed, FeedTimetable, RealtimeProgress
 
 # Missing raw data from this time.
-date_blacklist_start = date(2018, 7, 24)
-date_blacklist_end = date(2018, 8, 28) # not inclusive
+# End dates are non-inclusive
+BLACKLIST = (
+    (date(2018, 7, 24), date(2018, 8, 28)),
+    (date(2018, 11, 14), date(2018, 11, 28)),
+)
 
 
 def start_date_in_blacklist(start_date):
-    return start_date >= date_blacklist_start and start_date < date_blacklist_end
+    for start, end in BLACKLIST:
+        if start_date >= start and start_date < end:
+            return True
+    return False
+
+def get_end_of_blacklist(start_date):
+    for start, end in BLACKLIST:
+        if start_date >= start and start_date < end:
+            return end
+    return None
 
 def new_realtime_progress(feed, start_date):
     progress = RealtimeProgress(feed=feed, start_date=start_date)
@@ -56,7 +68,7 @@ def find_available_work(feed_slug):
 
         new_start_date = prev_start + timedelta(days=1)
         if start_date_in_blacklist(new_start_date):
-            new_start_date = date_blacklist_end
+            new_start_date = get_end_of_blacklist(new_start_date)
         return new_realtime_progress(feed, new_start_date)
 
 def get_latest_watermark(feed):
