@@ -1,4 +1,5 @@
 import django
+import time
 
 django.setup()
 
@@ -17,12 +18,12 @@ def main():
         realtime_progress = get_next_realtime_progress('nsw-buses')
         if realtime_progress is None:
             print('No available days to process')
-            return
+            time.sleep(30)
         print(realtime_progress)
         success = realtime_progress.take_processing_lock(allow_completed=True)
         if not success:
             print('Failed to get realtime lock. Bailing out.')
-            return
+            continue
         try:
             calculate_stats_for_day(realtime_progress.start_date)
             realtime_progress.set_stats_completed()

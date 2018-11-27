@@ -232,7 +232,7 @@ def fetch_next_dumps(realtime_progress, num_dumps, temp_dir):
             s3.Object(S3_BUCKET_NAME, key).download_file(tmp_path)
             results.append((key, tmp_path))
     else:
-        print(f'No new realtime dump data for {feed}')
+        print(f'No new realtime dump data for {realtime_progress.feed}')
     return results
 
 
