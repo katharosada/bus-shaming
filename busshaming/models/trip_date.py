@@ -45,7 +45,7 @@ class TripDate(models.Model):
     min_delay = models.SmallIntegerField(null=True, blank=True)
 
     sum_delay = models.IntegerField(null=True, blank=True)
-    sum_delay_squared = models.IntegerField(null=True, blank=True)
+    sum_delay_squared = models.BigIntegerField(null=True, blank=True)
 
     # New stuff
     schedule_relationship = models.SmallIntegerField(choices=ScheduleRelationship.choices(), null=True, blank=True)
