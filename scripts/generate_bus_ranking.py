@@ -8,7 +8,8 @@ from busshaming.models import RouteDate, Feed
 FEED_SLUG = 'nsw-buses'
 
 
-MIN_TRIPS = 500
+# 322 days of data at 4 trips/day on average
+MIN_TRIPS = 322 * 4
 MIN_RT_ENTRIES = 0
 
 
